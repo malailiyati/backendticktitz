@@ -1,0 +1,724 @@
+basePath: /
+definitions:
+  handlers.MovieResponse:
+    properties:
+      background_poster:
+        type: string
+      created_at:
+        type: string
+      director_id:
+        type: integer
+      duration:
+        type: string
+      id:
+        type: integer
+      popularity:
+        type: integer
+      poster:
+        type: string
+      release_date:
+        type: string
+      synopsis:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.CreateOrderRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      is_paid:
+        type: boolean
+      payment_id:
+        type: integer
+      phone:
+        type: string
+      qr_code:
+        type: string
+      schedule_id:
+        type: integer
+      seat_ids:
+        items:
+          type: integer
+        type: array
+      total_price:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  models.Login:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.MovieAdmin:
+    properties:
+      background_poster:
+        type: string
+      created_at:
+        type: string
+      director_id:
+        type: integer
+      duration:
+        description: untuk response JSON
+        type: string
+      id:
+        type: integer
+      popularity:
+        type: integer
+      poster:
+        type: string
+      release_date:
+        type: string
+      synopsis:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.MovieDetail:
+    properties:
+      background_poster:
+        type: string
+      casts:
+        type: string
+      director:
+        type: string
+      duration:
+        description: cast dari interval ke text
+        type: string
+      genres:
+        type: string
+      id:
+        type: integer
+      poster:
+        type: string
+      release_date:
+        type: string
+      synopsis:
+        type: string
+      title:
+        type: string
+    type: object
+  models.MovieFilter:
+    properties:
+      genres:
+        description: hasil string_agg
+        type: string
+      id:
+        type: integer
+      poster:
+        type: string
+      title:
+        type: string
+    type: object
+  models.Order:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      is_paid:
+        type: boolean
+      payment_id:
+        type: integer
+      phone:
+        type: string
+      qr_code:
+        type: string
+      schedule_id:
+        type: integer
+      total_price:
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.OrderHistory:
+    properties:
+      cinema_name:
+        type: string
+      created_at:
+        type: string
+      date:
+        type: string
+      is_paid:
+        type: boolean
+      location:
+        type: string
+      movie_title:
+        type: string
+      order_id:
+        type: integer
+      qr_code:
+        type: string
+      seats:
+        type: string
+      time:
+        type: string
+      total_price:
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.Profile:
+    properties:
+      created_at:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      phone:
+        type: string
+      profile_picture:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.ProfileResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      phone:
+        type: string
+      profile_picture:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.Register:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      role:
+        type: string
+        x-omitempty: true
+    required:
+    - email
+    - password
+    type: object
+  models.Response:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  models.ScheduleDetail:
+    properties:
+      cinema:
+        type: string
+      date:
+        type: string
+      id:
+        type: integer
+      location:
+        type: string
+      movie_id:
+        type: integer
+      price:
+        type: integer
+      time:
+        type: string
+    type: object
+  models.Seat:
+    properties:
+      id:
+        type: integer
+      seat_number:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: ticketing
+  title: tickitz
+  version: "1.0"
+paths:
+  /admin/movies:
+    get:
+      description: Get all movies, only accessible for admin
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.MovieAdmin'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all movies (Admin)
+      tags:
+      - Admin
+  /admin/movies/{id}:
+    delete:
+      description: Delete movie by ID, only accessible for admin
+      parameters:
+      - description: Movie ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a movie (Admin)
+      tags:
+      - Admin
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Edit movie data (partial update, with optional poster upload)
+      parameters:
+      - description: Movie ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Title
+        in: formData
+        name: title
+        type: string
+      - description: Director ID
+        in: formData
+        name: director_id
+        type: integer
+      - description: Poster file
+        in: formData
+        name: poster
+        type: file
+      - description: Background Poster file
+        in: formData
+        name: background_poster
+        type: file
+      - description: Release Date (YYYY-MM-DD)
+        in: formData
+        name: release_date
+        type: string
+      - description: Duration (e.g. 02:28)
+        in: formData
+        name: duration
+        type: string
+      - description: Synopsis
+        in: formData
+        name: synopsis
+        type: string
+      - description: Popularity
+        in: formData
+        name: popularity
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Patch movie (Admin)
+      tags:
+      - Admin
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login dengan email dan password
+      parameters:
+      - description: request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Login'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Login user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: Menghapus session (stateless di JWT)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Logout user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Membuat akun baru
+      parameters:
+      - description: Register request (role optional, default user)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Register'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Register user baru
+      tags:
+      - auth
+  /history:
+    get:
+      description: Get all order history for a user
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.OrderHistory'
+            type: array
+      summary: Get order history
+      tags:
+      - history
+  /movie/detail:
+    get:
+      description: Get detailed information for a movie (genres, casts, director)
+      parameters:
+      - description: Movie ID
+        in: query
+        name: movie_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MovieDetail'
+      summary: Get movie detail
+      tags:
+      - movies
+  /movie/filter:
+    get:
+      description: Get movies by title and/or genre with pagination
+      parameters:
+      - description: Filter by title
+        in: query
+        name: title
+        type: string
+      - description: Filter by genre
+        in: query
+        name: genre
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Limit per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.MovieFilter'
+            type: array
+      summary: Get Movies by Filter
+      tags:
+      - movies
+  /movie/popular:
+    get:
+      description: Get list of popular movies ordered by popularity
+      parameters:
+      - description: Limit number of movies (default 10)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.MovieResponse'
+            type: array
+      summary: Get Popular Movies
+      tags:
+      - movies
+  /movie/upcoming:
+    get:
+      description: Get list of upcoming movies (releaseDate > today)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.MovieResponse'
+            type: array
+      summary: Get Upcoming Movies
+      tags:
+      - movies
+  /orders:
+    post:
+      consumes:
+      - application/json
+      description: Create an order with schedule and seats
+      parameters:
+      - description: Order request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Order'
+      summary: Create new order
+      tags:
+      - orders
+  /profile:
+    get:
+      description: Get profile information by user_id (join users + profile)
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProfileResponse'
+      summary: Get user profile
+      tags:
+      - profile
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Update firstname, lastname, phone, profile_picture
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      - description: First Name
+        in: formData
+        name: first_name
+        type: string
+      - description: Last Name
+        in: formData
+        name: last_name
+        type: string
+      - description: Phone
+        in: formData
+        name: phone
+        type: string
+      - description: Profile Picture
+        in: formData
+        name: profile_picture
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Profile'
+      summary: Update user profile
+      tags:
+      - profile
+  /schedule:
+    get:
+      description: Get schedule list (date, time, location, cinema, price) for a movie
+      parameters:
+      - description: Movie ID
+        in: query
+        name: movie_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ScheduleDetail'
+            type: array
+      summary: Get schedules by movie ID
+      tags:
+      - schedules
+  /seats:
+    get:
+      description: Get all available (not booked) seats for a schedule
+      parameters:
+      - description: Schedule ID
+        in: query
+        name: schedule_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Seat'
+            type: array
+      summary: Get available seats by schedule
+      tags:
+      - seats
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
