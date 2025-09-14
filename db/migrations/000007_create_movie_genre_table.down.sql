@@ -1,0 +1,1 @@
+DOWN TABLE public.movie_genre;
