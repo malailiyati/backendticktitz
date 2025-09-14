@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/malailiyati/backend/internal/models"
@@ -60,27 +63,40 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 		updates["phone"] = *req.Phone
 	}
 
-	// upload file
+	// handle file upload
 	if req.ProfilePictureFile != nil {
-		filename := fmt.Sprintf("public/profile_pictures/%d_%s", userID, req.ProfilePictureFile.Filename)
-		if err := c.SaveUploadedFile(req.ProfilePictureFile, filename); err != nil {
+		ext := strings.ToLower(filepath.Ext(req.ProfilePictureFile.Filename))
+		allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".jfif": true}
+		if !allowed[ext] {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid file type"})
+			return
+		}
+		if req.ProfilePictureFile.Size > 2<<20 { // 2 MB
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "file too large"})
+			return
+		}
+
+		newName := fmt.Sprintf("%d_%d%s", userID, time.Now().UnixNano(), ext)
+		savePath := filepath.Join("public/profile_pictures", newName)
+
+		if err := c.SaveUploadedFile(req.ProfilePictureFile, savePath); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "failed to save file"})
 			return
 		}
-		updates["profile_picture"] = filename
+		updates["profile_picture"] = "/profile_pictures/" + newName
 	}
 
 	updated, err := h.repo.UpdateProfile(c.Request.Context(), userID, updates)
 	if err != nil {
-		// rollback kalau DB gagal tapi file sudah tersimpan
 		if req.ProfilePictureFile != nil {
-			_ = os.Remove(updates["profile_picture"].(string))
+			_ = os.Remove("public" + updates["profile_picture"].(string)) // rollback file
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": updated})
+
 }
 
 // GetProfile godoc

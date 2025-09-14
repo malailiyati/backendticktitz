@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"fmt"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -109,6 +112,28 @@ func (h *MovieAdminHandler) DeleteMovie(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Movie deleted successfully"})
 }
 
+func saveFile(c *gin.Context, file *multipart.FileHeader, folder, prefix string, id int) (string, string, error) {
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".jfif": true}
+	if !allowed[ext] {
+		return "", "", fmt.Errorf("invalid file type")
+	}
+	if file.Size > 5<<20 {
+		return "", "", fmt.Errorf("file too large")
+	}
+
+	os.MkdirAll("public/"+folder, os.ModePerm)
+	newName := fmt.Sprintf("%s_%d_%d%s", prefix, id, time.Now().UnixNano(), ext)
+	savePath := filepath.Join("public", folder, newName)
+
+	if err := c.SaveUploadedFile(file, savePath); err != nil {
+		return "", "", err
+	}
+
+	// return: relative path (buat DB), full path (buat rollback)
+	return "/" + folder + "/" + newName, savePath, nil
+}
+
 // @Summary Patch movie (Admin)
 // @Description Edit movie data (partial update, with optional poster upload)
 // @Tags Admin
@@ -131,7 +156,9 @@ func (h *MovieAdminHandler) DeleteMovie(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Security JWTtoken
 // @Router /admin/movies/{id} [patch]
+// helper simpan file
 func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
+	// --- Authorization check ---
 	claims, exists := c.Get("claims")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": "Unauthorized"})
@@ -143,12 +170,14 @@ func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 		return
 	}
 
+	// --- Parse movie ID ---
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Invalid movie ID"})
 		return
 	}
 
+	// --- Parse form body ---
 	var form models.UpdateMovieAdminBody
 	if err := c.ShouldBind(&form); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
@@ -156,7 +185,9 @@ func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{}
+	rollbackFiles := []string{}
 
+	// --- Normal fields ---
 	if form.Title != "" {
 		updates["title"] = form.Title
 	}
@@ -182,25 +213,35 @@ func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 		}
 	}
 
-	// Upload poster
+	// --- Upload poster ---
 	if form.Poster != nil {
-		posterPath := filepath.Join("public/uploads", form.Poster.Filename)
-		os.MkdirAll("public/uploads", os.ModePerm)
-		if err := c.SaveUploadedFile(form.Poster, posterPath); err == nil {
-			updates["poster"] = posterPath
+		path, fullPath, err := saveFile(c, form.Poster, "posters", "poster", id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+			return
 		}
+		updates["poster"] = path
+		rollbackFiles = append(rollbackFiles, fullPath)
 	}
 
+	// --- Upload background ---
 	if form.BackgroundPoster != nil {
-		bgPath := filepath.Join("public/uploads", form.BackgroundPoster.Filename)
-		os.MkdirAll("public/uploads", os.ModePerm)
-		if err := c.SaveUploadedFile(form.BackgroundPoster, bgPath); err == nil {
-			updates["background_poster"] = bgPath
+		path, fullPath, err := saveFile(c, form.BackgroundPoster, "backgrounds", "bg", id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+			return
 		}
+		updates["background_poster"] = path
+		rollbackFiles = append(rollbackFiles, fullPath)
 	}
 
+	// --- Update DB ---
 	movie, err := h.repo.UpdateMovie(c.Request.Context(), id, updates)
 	if err != nil {
+		// rollback file kalau DB gagal
+		for _, f := range rollbackFiles {
+			_ = os.Remove(f)
+		}
 		if err.Error() == "movie not found" {
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "error": "Movie not found"})
 			return
