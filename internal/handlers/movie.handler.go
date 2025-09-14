@@ -5,9 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/malailiyati/backend/internal/models"
 	"github.com/malailiyati/backend/internal/repositories"
-	"github.com/malailiyati/backend/internal/utils"
 )
 
 type MovieHandler struct {
@@ -36,26 +34,9 @@ func (h *MovieHandler) GetUpcomingMovies(c *gin.Context) {
 		return
 	}
 
-	var response []models.MovieResponse
-	for _, m := range movies {
-		response = append(response, models.MovieResponse{
-			ID:               m.ID,
-			Title:            m.Title,
-			DirectorID:       m.DirectorID,
-			Poster:           m.Poster,
-			BackgroundPoster: m.BackgroundPoster,
-			ReleaseDate:      m.ReleaseDate,
-			Duration:         utils.FormatIntervalToText(m.Duration), // "2 jam 30 menit"
-			Synopsis:         m.Synopsis,
-			Popularity:       m.Popularity,
-			CreatedAt:        m.CreatedAt,
-			UpdatedAt:        m.UpdatedAt,
-		})
-	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    response,
+		"data":    movies,
 	})
 }
 
@@ -79,24 +60,7 @@ func (h *MovieHandler) GetPopularMovies(c *gin.Context) {
 		return
 	}
 
-	var response []models.MovieResponse
-	for _, m := range movies {
-		response = append(response, models.MovieResponse{
-			ID:               m.ID,
-			Title:            m.Title,
-			DirectorID:       m.DirectorID,
-			Poster:           m.Poster,
-			BackgroundPoster: m.BackgroundPoster,
-			ReleaseDate:      m.ReleaseDate,
-			Duration:         utils.FormatIntervalToText(m.Duration),
-			Synopsis:         m.Synopsis,
-			Popularity:       m.Popularity,
-			CreatedAt:        m.CreatedAt,
-			UpdatedAt:        m.UpdatedAt,
-		})
-	}
-
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": response})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": movies})
 }
 
 // GetMoviesByFilter godoc

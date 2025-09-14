@@ -26,6 +26,7 @@ func (r *MovieAdminRepository) GetAllMovies(ctx context.Context) ([]models.Movie
 			   releasedate, duration, synopsis, popularity,
 			   created_at, updated_at
 		FROM movies
+		WHERE deleted_at IS NULL
 		ORDER BY created_at DESC
 	`
 	rows, err := r.db.Query(ctx, sql)
@@ -66,26 +67,17 @@ func (r *MovieAdminRepository) GetAllMovies(ctx context.Context) ([]models.Movie
 }
 
 func (r *MovieAdminRepository) DeleteMovie(ctx context.Context, id int) error {
-	// Hapus dulu dari table relasi
-	_, err := r.db.Exec(ctx, `DELETE FROM movie_genre WHERE movie_id = $1`, id)
-	if err != nil {
-		return err
-	}
-
-	// Kalau ada relasi lain misal movie_cast, hapus juga
-	_, err = r.db.Exec(ctx, `DELETE FROM movie_cast WHERE movie_id = $1`, id)
-	if err != nil {
-		return err
-	}
-
-	// Baru hapus dari movies
-	tag, err := r.db.Exec(ctx, `DELETE FROM movies WHERE id = $1`, id)
+	tag, err := r.db.Exec(ctx, `
+		UPDATE movies
+		SET deleted_at = CURRENT_TIMESTAMP
+		WHERE id = $1 AND deleted_at IS NULL
+	`, id)
 	if err != nil {
 		return err
 	}
 
 	if tag.RowsAffected() == 0 {
-		return errors.New("movie not found")
+		return errors.New("movie not found or already deleted")
 	}
 
 	return nil

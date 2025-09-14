@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -34,7 +35,16 @@ func main() {
 	}
 	log.Println("DB Connected")
 
-	r := routers.InitRouter(db)
+	// inisialisasi redis
+	rdb := configs.InitRedis()
+	if cmd := rdb.Ping(context.Background()); cmd.Err() != nil {
+		log.Println("Ping to Redis failed\nCause: ", cmd.Err().Error())
+		return
+	}
+	log.Println("Redis Connected")
+	defer rdb.Close()
+
+	r := routers.InitRouter(db, rdb)
 
 	r.Run(":8080")
 }

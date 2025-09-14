@@ -56,3 +56,10 @@ type MovieResponse struct {
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
+
+type MovieSimpleResponse struct {
+	ID     int    `json:"id"`
+	Title  string `json:"title"`
+	Poster string `json:"poster"`
+	Genres string `json:"genres"`
+}
