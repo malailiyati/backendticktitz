@@ -31,7 +31,8 @@ func NewProfileHandler(repo *repositories.ProfileRepository) *ProfileHandler {
 // @Param phone formData string false "Phone"
 // @Param profile_picture formData file false "Profile Picture"
 // @Success 200 {object} models.Profile
-// @Router /profile [patch]
+// @Security JWTtoken
+// @Router /user/profile [patch]
 func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Query("user_id"))
 	if err != nil || userID < 1 {
@@ -87,7 +88,8 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 // @Produce json
 // @Param user_id query int true "User ID"
 // @Success 200 {object} models.ProfileResponse
-// @Router /profile [get]
+// @Security JWTtoken
+// @Router /user/profile [get]
 func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Query("user_id"))
 	if err != nil || userID < 1 {

@@ -37,9 +37,7 @@ func InitRouter(db *pgxpool.Pool) *gin.Engine {
 	InitMovieRouter(router, db)
 	InitScheduleRouter(router, db)
 	InitSeatRouter(router, db)
-	InitOrderRouter(router, db)
-	InitProfileRouter(router, db)
-	InitHistoryRouter(router, db)
+	InitUserRouter(router, db)
 	InitMovieAdminRouter(router, db)
 
 	// catch all route

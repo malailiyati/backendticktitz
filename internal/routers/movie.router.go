@@ -9,25 +9,12 @@ import (
 )
 
 func InitMovieRouter(router *gin.Engine, db *pgxpool.Pool) {
-	// upcoming
-	upcomingRepo := repositories.NewUpcomingMovieRepository(db)
-	upcomingHandler := handlers.NewUpcomingMovieHandler(upcomingRepo)
-
-	// popular
-	popularRepo := repositories.NewMoviePopularRepository(db)
-	popularHandler := handlers.NewMoviePopularHandler(popularRepo)
-
-	// filter
-	filterRepo := repositories.NewMovieFilterRepository(db)
-	filterHandler := handlers.NewMovieFilterHandler(filterRepo)
-
-	// repo & handler untuk detail
-	detailRepo := repositories.NewMovieDetailRepository(db)
-	detailHandler := handlers.NewMovieDetailHandler(detailRepo)
+	moviesRepo := repositories.NewMovieRepository(db)
+	moviesHandler := handlers.NewMovieHandler(moviesRepo)
 
 	movieRouter := router.Group("/movie")
-	movieRouter.GET("/upcoming", upcomingHandler.GetUpcomingMovies)
-	movieRouter.GET("/popular", popularHandler.GetPopularMovies)
-	movieRouter.GET("/filter", filterHandler.GetMoviesByFilter)
-	movieRouter.GET("/detail", detailHandler.GetMovieDetail)
+	movieRouter.GET("/upcoming", moviesHandler.GetUpcomingMovies)
+	movieRouter.GET("/popular", moviesHandler.GetPopularMovies)
+	movieRouter.GET("", moviesHandler.GetMoviesByFilter)
+	movieRouter.GET("/:movie_id", moviesHandler.GetMovieDetail)
 }

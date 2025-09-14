@@ -23,7 +23,8 @@ func NewHistoryHandler(repo *repositories.HistoryRepository) *HistoryHandler {
 // @Produce json
 // @Param user_id query int true "User ID"
 // @Success 200 {array} models.OrderHistory
-// @Router /history [get]
+// @Security JWTtoken
+// @Router /user/history [get]
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Query("user_id"))
 	if err != nil || userID < 1 {

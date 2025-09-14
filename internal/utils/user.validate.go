@@ -7,7 +7,6 @@ import (
 	"github.com/malailiyati/backend/internal/models"
 )
 
-// ---------- VALIDATOR ----------
 var (
 	emailRe   = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 	lowerRe   = regexp.MustCompile(`[a-z]`)
@@ -58,20 +57,3 @@ func ValidateRegister(b models.UserAuth) error {
 	}
 	return ValidatePassword(b.Password)
 }
-
-// func ValidatePatch(b models.UpdateUser) error {
-// 	if b.Email == nil && b.Password == nil {
-// 		return errors.New("tidak ada field yang diupdate")
-// 	}
-// 	if b.Email != nil {
-// 		if err := ValidateEmail(*b.Email); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	if b.Password != nil {
-// 		if err := ValidatePassword(*b.Password); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }

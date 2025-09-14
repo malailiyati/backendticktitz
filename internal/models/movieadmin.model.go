@@ -1,6 +1,7 @@
 package models
 
 import (
+	"mime/multipart"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -19,4 +20,15 @@ type MovieAdmin struct {
 	Popularity       int             `json:"popularity"`
 	CreatedAt        time.Time       `json:"created_at"`
 	UpdatedAt        time.Time       `json:"updated_at"`
+}
+
+type UpdateMovieAdminBody struct {
+	Title            string                `form:"title"`
+	DirectorID       string                `form:"director_id"`
+	Poster           *multipart.FileHeader `form:"poster"`
+	BackgroundPoster *multipart.FileHeader `form:"background_poster"`
+	ReleaseDate      string                `form:"release_date"` // YYYY-MM-DD
+	Duration         string                `form:"duration"`     // e.g. 02:35
+	Synopsis         string                `form:"synopsis"`
+	Popularity       string                `form:"popularity"`
 }

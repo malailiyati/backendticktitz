@@ -150,19 +150,24 @@ func (a *AuthHandler) Register(ctx *gin.Context) {
 		return
 	}
 
+	// hanya balikin email
+	resp := models.RegisterResponse{
+		Email: user.Email,
+	}
+
 	ctx.JSON(http.StatusCreated, gin.H{
 		"success": true,
-		"user":    user,
+		"user":    resp,
 	})
 }
 
 // Logout godoc
-// @Summary      Logout user
-// @Description  Menghapus session (stateless di JWT)
-// @Tags         auth
-// @Produce      json
-// @Success      200   {object}  models.Response
-// @Router       /auth/logout [post]
+// @Summary Logout user
+// @Description Menghapus session (stateless di JWT)
+// @Tags auth
+// @Produce json
+// @Success 200 {object} models.Response
+// @Router /auth/logout [post]
 func (a *AuthHandler) Logout(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,

@@ -24,7 +24,8 @@ func NewOrderHandler(repo *repositories.OrderRepository) *OrderHandler {
 // @Produce json
 // @Param request body models.CreateOrderRequest true "Order request"
 // @Success 200 {object} models.Order
-// @Router /orders [post]
+// @Security JWTtoken
+// @Router /user/orders [post]
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	var req models.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

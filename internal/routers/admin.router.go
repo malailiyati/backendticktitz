@@ -15,7 +15,7 @@ func InitMovieAdminRouter(router *gin.Engine, db *pgxpool.Pool) {
 
 	// Admin routes
 	admin := router.Group("/admin")
-	admin.Use(middlewares.VerifyToken)
+	admin.Use(middlewares.AuthMiddleware("admin"))
 	{
 		admin.GET("/movies", movieAdminHandler.GetAllMovies)
 		admin.DELETE("/movies/:id", movieAdminHandler.DeleteMovie)

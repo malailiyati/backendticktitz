@@ -1,6 +1,6 @@
 version: "1"
 root: .
-main_path: ""
+main_path: "./cmd"
 tmp_path: ./tmp
 build_name: runner-build
 build_args: ""

@@ -19,7 +19,7 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "JWTtoken": []
                     }
                 ],
                 "description": "Get all movies, only accessible for admin",
@@ -61,7 +61,7 @@ const docTemplate = `{
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "JWTtoken": []
                     }
                 ],
                 "description": "Delete movie by ID, only accessible for admin",
@@ -129,7 +129,7 @@ const docTemplate = `{
             "patch": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "JWTtoken": []
                     }
                 ],
                 "description": "Edit movie data (partial update, with optional poster upload)",
@@ -346,68 +346,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/history": {
-            "get": {
-                "description": "Get all order history for a user",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "history"
-                ],
-                "summary": "Get order history",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.OrderHistory"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/movie/detail": {
-            "get": {
-                "description": "Get detailed information for a movie (genres, casts, director)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "movies"
-                ],
-                "summary": "Get movie detail",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Movie ID",
-                        "name": "movie_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.MovieDetail"
-                        }
-                    }
-                }
-            }
-        },
-        "/movie/filter": {
+        "/movie/": {
             "get": {
                 "description": "Get movies by title and/or genre with pagination",
                 "produces": [
@@ -480,7 +419,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.MovieResponse"
+                                "$ref": "#/definitions/models.MovieResponse"
                             }
                         }
                     }
@@ -503,125 +442,58 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.MovieResponse"
+                                "$ref": "#/definitions/models.MovieResponse"
                             }
                         }
                     }
                 }
             }
         },
-        "/orders": {
-            "post": {
-                "description": "Create an order with schedule and seats",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "orders"
-                ],
-                "summary": "Create new order",
-                "parameters": [
-                    {
-                        "description": "Order request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.CreateOrderRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Order"
-                        }
-                    }
-                }
-            }
-        },
-        "/profile": {
+        "/movies/{movie_id}": {
             "get": {
-                "description": "Get profile information by user_id (join users + profile)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "profile"
-                ],
-                "summary": "Get user profile",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.ProfileResponse"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "description": "Update firstname, lastname, phone, profile_picture",
+                "description": "Get movie detail by ID",
                 "consumes": [
-                    "multipart/form-data"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "profile"
+                    "movies"
                 ],
-                "summary": "Update user profile",
+                "summary": "Get movie detail",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "query",
+                        "description": "Movie ID",
+                        "name": "movie_id",
+                        "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "First Name",
-                        "name": "first_name",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Last Name",
-                        "name": "last_name",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Phone",
-                        "name": "phone",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "Profile Picture",
-                        "name": "profile_picture",
-                        "in": "formData"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Profile"
+                            "$ref": "#/definitions/models.MovieResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -690,47 +562,178 @@ const docTemplate = `{
                     }
                 }
             }
-        }
-    },
-    "definitions": {
-        "handlers.MovieResponse": {
-            "type": "object",
-            "properties": {
-                "background_poster": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "director_id": {
-                    "type": "integer"
-                },
-                "duration": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "popularity": {
-                    "type": "integer"
-                },
-                "poster": {
-                    "type": "string"
-                },
-                "release_date": {
-                    "type": "string"
-                },
-                "synopsis": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
+        },
+        "/user/history": {
+            "get": {
+                "security": [
+                    {
+                        "JWTtoken": []
+                    }
+                ],
+                "description": "Get all order history for a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "history"
+                ],
+                "summary": "Get order history",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.OrderHistory"
+                            }
+                        }
+                    }
                 }
             }
         },
+        "/user/orders": {
+            "post": {
+                "security": [
+                    {
+                        "JWTtoken": []
+                    }
+                ],
+                "description": "Create an order with schedule and seats",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Create new order",
+                "parameters": [
+                    {
+                        "description": "Order request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Order"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/profile": {
+            "get": {
+                "security": [
+                    {
+                        "JWTtoken": []
+                    }
+                ],
+                "description": "Get profile information by user_id (join users + profile)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Get user profile",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ProfileResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "JWTtoken": []
+                    }
+                ],
+                "description": "Update firstname, lastname, phone, profile_picture",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Update user profile",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "First Name",
+                        "name": "first_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Last Name",
+                        "name": "last_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Phone",
+                        "name": "phone",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Profile Picture",
+                        "name": "profile_picture",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Profile"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
         "models.CreateOrderRequest": {
             "type": "object",
             "properties": {
@@ -824,42 +827,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.MovieDetail": {
-            "type": "object",
-            "properties": {
-                "background_poster": {
-                    "type": "string"
-                },
-                "casts": {
-                    "type": "string"
-                },
-                "director": {
-                    "type": "string"
-                },
-                "duration": {
-                    "description": "cast dari interval ke text",
-                    "type": "string"
-                },
-                "genres": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "poster": {
-                    "type": "string"
-                },
-                "release_date": {
-                    "type": "string"
-                },
-                "synopsis": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
         "models.MovieFilter": {
             "type": "object",
             "properties": {
@@ -874,6 +841,44 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MovieResponse": {
+            "type": "object",
+            "properties": {
+                "background_poster": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "director_id": {
+                    "type": "integer"
+                },
+                "duration": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "popularity": {
+                    "type": "integer"
+                },
+                "poster": {
+                    "type": "string"
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "synopsis": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -1094,7 +1099,7 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
-        "BearerAuth": {
+        "JWTtoken": {
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

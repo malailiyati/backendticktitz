@@ -15,8 +15,7 @@ import (
 // @description 	ticketing
 // @host			localhost:8080
 // @basePath		/
-
-// @securityDefinitions.apikey BearerAuth
+// @securityDefinitions.apikey 	JWTtoken
 // @in header
 // @name Authorization
 func main() {

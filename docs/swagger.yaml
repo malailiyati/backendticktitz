@@ -1,30 +1,5 @@
 basePath: /
 definitions:
-  handlers.MovieResponse:
-    properties:
-      background_poster:
-        type: string
-      created_at:
-        type: string
-      director_id:
-        type: integer
-      duration:
-        type: string
-      id:
-        type: integer
-      popularity:
-        type: integer
-      poster:
-        type: string
-      release_date:
-        type: string
-      synopsis:
-        type: string
-      title:
-        type: string
-      updated_at:
-        type: string
-    type: object
   models.CreateOrderRequest:
     properties:
       email:
@@ -87,30 +62,6 @@ definitions:
       updated_at:
         type: string
     type: object
-  models.MovieDetail:
-    properties:
-      background_poster:
-        type: string
-      casts:
-        type: string
-      director:
-        type: string
-      duration:
-        description: cast dari interval ke text
-        type: string
-      genres:
-        type: string
-      id:
-        type: integer
-      poster:
-        type: string
-      release_date:
-        type: string
-      synopsis:
-        type: string
-      title:
-        type: string
-    type: object
   models.MovieFilter:
     properties:
       genres:
@@ -121,6 +72,31 @@ definitions:
       poster:
         type: string
       title:
+        type: string
+    type: object
+  models.MovieResponse:
+    properties:
+      background_poster:
+        type: string
+      created_at:
+        type: string
+      director_id:
+        type: integer
+      duration:
+        type: string
+      id:
+        type: integer
+      popularity:
+        type: integer
+      poster:
+        type: string
+      release_date:
+        type: string
+      synopsis:
+        type: string
+      title:
+        type: string
+      updated_at:
         type: string
     type: object
   models.Order:
@@ -294,7 +270,7 @@ paths:
             additionalProperties: true
             type: object
       security:
-      - BearerAuth: []
+      - JWTtoken: []
       summary: Get all movies (Admin)
       tags:
       - Admin
@@ -341,7 +317,7 @@ paths:
             additionalProperties: true
             type: object
       security:
-      - BearerAuth: []
+      - JWTtoken: []
       summary: Delete a movie (Admin)
       tags:
       - Admin
@@ -421,7 +397,7 @@ paths:
             additionalProperties: true
             type: object
       security:
-      - BearerAuth: []
+      - JWTtoken: []
       summary: Patch movie (Admin)
       tags:
       - Admin
@@ -490,47 +466,7 @@ paths:
       summary: Register user baru
       tags:
       - auth
-  /history:
-    get:
-      description: Get all order history for a user
-      parameters:
-      - description: User ID
-        in: query
-        name: user_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.OrderHistory'
-            type: array
-      summary: Get order history
-      tags:
-      - history
-  /movie/detail:
-    get:
-      description: Get detailed information for a movie (genres, casts, director)
-      parameters:
-      - description: Movie ID
-        in: query
-        name: movie_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.MovieDetail'
-      summary: Get movie detail
-      tags:
-      - movies
-  /movie/filter:
+  /movie/:
     get:
       description: Get movies by title and/or genre with pagination
       parameters:
@@ -577,7 +513,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.MovieResponse'
+              $ref: '#/definitions/models.MovieResponse'
             type: array
       summary: Get Popular Movies
       tags:
@@ -592,88 +528,44 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.MovieResponse'
+              $ref: '#/definitions/models.MovieResponse'
             type: array
       summary: Get Upcoming Movies
       tags:
       - movies
-  /orders:
-    post:
-      consumes:
-      - application/json
-      description: Create an order with schedule and seats
-      parameters:
-      - description: Order request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.CreateOrderRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Order'
-      summary: Create new order
-      tags:
-      - orders
-  /profile:
+  /movies/{movie_id}:
     get:
-      description: Get profile information by user_id (join users + profile)
-      parameters:
-      - description: User ID
-        in: query
-        name: user_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.ProfileResponse'
-      summary: Get user profile
-      tags:
-      - profile
-    patch:
       consumes:
-      - multipart/form-data
-      description: Update firstname, lastname, phone, profile_picture
+      - application/json
+      description: Get movie detail by ID
       parameters:
-      - description: User ID
-        in: query
-        name: user_id
+      - description: Movie ID
+        in: path
+        name: movie_id
         required: true
         type: integer
-      - description: First Name
-        in: formData
-        name: first_name
-        type: string
-      - description: Last Name
-        in: formData
-        name: last_name
-        type: string
-      - description: Phone
-        in: formData
-        name: phone
-        type: string
-      - description: Profile Picture
-        in: formData
-        name: profile_picture
-        type: file
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Profile'
-      summary: Update user profile
+            $ref: '#/definitions/models.MovieResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get movie detail
       tags:
-      - profile
+      - movies
   /schedule:
     get:
       description: Get schedule list (date, time, location, cinema, price) for a movie
@@ -716,8 +608,114 @@ paths:
       summary: Get available seats by schedule
       tags:
       - seats
+  /user/history:
+    get:
+      description: Get all order history for a user
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.OrderHistory'
+            type: array
+      security:
+      - JWTtoken: []
+      summary: Get order history
+      tags:
+      - history
+  /user/orders:
+    post:
+      consumes:
+      - application/json
+      description: Create an order with schedule and seats
+      parameters:
+      - description: Order request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Order'
+      security:
+      - JWTtoken: []
+      summary: Create new order
+      tags:
+      - orders
+  /user/profile:
+    get:
+      description: Get profile information by user_id (join users + profile)
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProfileResponse'
+      security:
+      - JWTtoken: []
+      summary: Get user profile
+      tags:
+      - profile
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Update firstname, lastname, phone, profile_picture
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      - description: First Name
+        in: formData
+        name: first_name
+        type: string
+      - description: Last Name
+        in: formData
+        name: last_name
+        type: string
+      - description: Phone
+        in: formData
+        name: phone
+        type: string
+      - description: Profile Picture
+        in: formData
+        name: profile_picture
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Profile'
+      security:
+      - JWTtoken: []
+      summary: Update user profile
+      tags:
+      - profile
 securityDefinitions:
-  BearerAuth:
+  JWTtoken:
     in: header
     name: Authorization
     type: apiKey

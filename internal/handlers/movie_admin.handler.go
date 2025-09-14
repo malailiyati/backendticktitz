@@ -28,8 +28,8 @@ func NewMovieAdminHandler(repo *repositories.MovieAdminRepository) *MovieAdminHa
 // @Success 200 {array} models.MovieAdmin
 // @Failure 401 {object} map[string]interface{}
 // @Failure 403 {object} map[string]interface{}
+// @Security JWTtoken
 // @Router /admin/movies [get]
-// @Security BearerAuth
 func (h *MovieAdminHandler) GetAllMovies(c *gin.Context) {
 	claims, exists := c.Get("claims")
 	if !exists {
@@ -75,8 +75,8 @@ func (h *MovieAdminHandler) GetAllMovies(c *gin.Context) {
 // @Failure 403 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
+// @Security JWTtoken
 // @Router /admin/movies/{id} [delete]
-// @Security BearerAuth
 func (h *MovieAdminHandler) DeleteMovie(c *gin.Context) {
 	claims, exists := c.Get("claims")
 	if !exists {
@@ -129,8 +129,8 @@ func (h *MovieAdminHandler) DeleteMovie(c *gin.Context) {
 // @Failure 403 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
+// @Security JWTtoken
 // @Router /admin/movies/{id} [patch]
-// @Security BearerAuth
 func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 	claims, exists := c.Get("claims")
 	if !exists {
