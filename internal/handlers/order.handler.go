@@ -26,18 +26,40 @@ func NewOrderHandler(repo *repositories.OrderRepository) *OrderHandler {
 // @Success 200 {object} models.Order
 // @Security JWTtoken
 // @Router /user/orders [post]
-func (h *OrderHandler) CreateOrder(c *gin.Context) {
+func (h *OrderHandler) CreateOrder(ctx *gin.Context) {
 	var req models.CreateOrderRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid request body",
+		})
 		return
 	}
 
-	order, err := h.repo.CreateOrder(c.Request.Context(), req)
+	// Inject user_id dari JWT (biar user ga bisa order atas nama orang lain)
+	userID := ctx.GetInt("user_id")
+	if userID == 0 {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "Silahkan login terlebih dahulu",
+		})
+		return
+	}
+	req.UserID = userID
+
+	// Panggil repository
+	order, err := h.repo.CreateOrder(ctx.Request.Context(), req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": order})
+	// Response sukses
+	ctx.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"data":    order,
+	})
 }

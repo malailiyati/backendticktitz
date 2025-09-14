@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/malailiyati/backend/internal/models"
@@ -40,9 +41,29 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req models.CreateOrde
 		return nil, err
 	}
 
-	// insert kursi ke order_seat
+	// loop kursi
 	for _, seatID := range req.SeatIDs {
-		_, err := tx.Exec(ctx,
+		var exists bool
+		// cek apakah seat sudah dipakai di order lain (yang sudah dibayar)
+		err := tx.QueryRow(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM order_seat os
+				JOIN orders o ON o.id = os.order_id
+				WHERE os.seat_id = $1
+				  AND o.schedule_id = $2
+				  AND o.isPaid = true
+			)
+		`, seatID, req.ScheduleID).Scan(&exists)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, fmt.Errorf("seat %d sudah terjual", seatID)
+		}
+
+		// insert kursi ke order_seat
+		_, err = tx.Exec(ctx,
 			`INSERT INTO order_seat (order_id, seat_id) VALUES ($1, $2)`,
 			order.ID, seatID,
 		)
@@ -51,6 +72,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req models.CreateOrde
 		}
 	}
 
+	// commit transaction
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
