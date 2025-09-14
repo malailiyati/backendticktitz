@@ -20,11 +20,12 @@ func (r *SeatRepository) GetAvailableSeats(ctx context.Context, scheduleID int) 
 	const q = `
 		SELECT s.id, s.seat_number
 		FROM seats s
-		WHERE s.id NOT IN (
-			SELECT os.seat_id
-			FROM order_seat os
-			JOIN orders o ON o.id = os.order_id
-			WHERE o.schedule_id = $1
+		WHERE s.id IN (
+		SELECT os.seat_id
+		FROM order_seat os
+		JOIN orders o ON o.id = os.order_id
+		WHERE o.schedule_id = $1
+		AND o.isPaid = true
 		)
 		ORDER BY s.seat_number
 	`

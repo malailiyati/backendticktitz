@@ -240,6 +240,20 @@ definitions:
       seat_number:
         type: string
     type: object
+  models.UpdatePasswordRequest:
+    properties:
+      confirm_password:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+      old_password:
+        type: string
+    required:
+    - confirm_password
+    - new_password
+    - old_password
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -655,6 +669,69 @@ paths:
       summary: Create new order
       tags:
       - orders
+  /user/password:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Password lama & baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              allOf:
+              - type: string
+              - properties:
+                  message:
+                    type: string
+                type: object
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              allOf:
+              - type: string
+              - properties:
+                  error:
+                    type: string
+                type: object
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              allOf:
+              - type: string
+              - properties:
+                  error:
+                    type: string
+                type: object
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              allOf:
+              - type: string
+              - properties:
+                  error:
+                    type: string
+                type: object
+            type: object
+      security:
+      - JWTtoken: []
+      summary: Ubah password user
+      tags:
+      - User
   /user/profile:
     get:
       description: Get profile information by user_id (join users + profile)

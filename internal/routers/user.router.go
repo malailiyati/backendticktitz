@@ -29,5 +29,6 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool) {
 		user.GET("/history", historyHandler.GetHistory) // lihat riwayat order
 		user.GET("/profile", profileHandler.GetProfile)
 		user.PATCH("/profile", profileHandler.UpdateProfile)
+		user.PUT("/password", profileHandler.UpdatePassword)
 	}
 }

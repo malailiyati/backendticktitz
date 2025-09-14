@@ -32,6 +32,7 @@ func AuthMiddleware(allowedRoles ...string) gin.HandlerFunc {
 
 		// simpan claims ke context
 		ctx.Set("claims", claims)
+		ctx.Set("user_id", claims.UserId)
 
 		// cek role kalau ada rules
 		if len(allowedRoles) > 0 {

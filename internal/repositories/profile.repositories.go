@@ -82,3 +82,35 @@ func (r *ProfileRepository) GetProfileByUserID(ctx context.Context, userID int) 
 
 	return &p, nil
 }
+
+func (r *ProfileRepository) GetUserByID(ctx context.Context, userID int) (*models.User, error) {
+	const q = `
+		SELECT id, email, role, password, created_at, updated_at
+		FROM users
+		WHERE id = $1
+	`
+
+	var u models.User
+	err := r.db.QueryRow(ctx, q, userID).Scan(
+		&u.Id,
+		&u.Email,
+		&u.Role,
+		&u.Password,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (r *ProfileRepository) UpdatePassword(ctx context.Context, userID int, hashed string) error {
+	const q = `
+		UPDATE users
+		SET password = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+	`
+	_, err := r.db.Exec(ctx, q, hashed, userID)
+	return err
+}

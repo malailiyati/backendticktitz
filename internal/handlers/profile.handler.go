@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/malailiyati/backend/internal/models"
 	"github.com/malailiyati/backend/internal/repositories"
+	"github.com/malailiyati/backend/internal/utils"
+	"github.com/malailiyati/backend/pkg"
 )
 
 type ProfileHandler struct {
@@ -104,4 +106,76 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": profile})
+}
+
+// UpdatePassword godoc
+// @Summary Ubah password user
+// @Tags User
+// @Security JWTtoken
+// @Accept json
+// @Produce json
+// @Param body body models.UpdatePasswordRequest true "Password lama & baru"
+// @Success 200 {object} map[string]string{message=string}
+// @Failure 400 {object} map[string]string{error=string}
+// @Failure 401 {object} map[string]string{error=string}
+// @Failure 404 {object} map[string]string{error=string}
+// @Router /user/password [put]
+func (h *ProfileHandler) UpdatePassword(ctx *gin.Context) {
+	var req models.UpdatePasswordRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	// cek confirm password
+	if req.NewPassword != req.ConfirmPassword {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Password baru tidak sama"})
+		return
+	}
+
+	// validasi strength password baru
+	if err := utils.ValidatePassword(req.NewPassword); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// ambil user id dari JWT claims
+	userID := ctx.GetInt("user_id")
+	if userID == 0 {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Silahkan login terlebih dahulu"})
+		return
+	}
+
+	// ambil data user dari DB
+	user, err := h.repo.GetUserByID(ctx.Request.Context(), userID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
+		return
+	}
+
+	fmt.Println("DEBUG: password DB =", user.Password)
+	fmt.Println("DEBUG: password input =", req.OldPassword)
+
+	// verifikasi password lama
+	hc := pkg.NewHashConfig()
+	ok, err := hc.CompareHashAndPassword(req.OldPassword, user.Password)
+	if err != nil || !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Password lama salah"})
+		return
+	}
+
+	// hash password baru
+	newHash, err := hc.GenHash(req.NewPassword)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal hash password baru"})
+		return
+	}
+
+	// update password di DB
+	if err := h.repo.UpdatePassword(ctx.Request.Context(), userID, newHash); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal update password"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Password berhasil diubah"})
 }
