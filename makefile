@@ -25,13 +25,4 @@ migrate-full:
 	make migrate-up
 	make insert-seed
 
-# debug
-print-db-url:
-	@echo $(DBURL)
 
-print-hello:
-	@echo "hello"
-
-hello-dburl:
-	make print-db-url
-	make print-hello
