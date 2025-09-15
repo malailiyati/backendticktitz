@@ -17,14 +17,14 @@ func NewSeatHandler(repo *repositories.SeatRepository) *SeatHandler {
 }
 
 // GetAvailableSeats godoc
-// @Summary Get available seats by schedule
-// @Description Get all available (not booked) seats for a schedule
+// @Summary Get sold seats by schedule
+// @Description Get all sold seats for a schedule
 // @Tags seats
 // @Produce json
 // @Param schedule_id query int true "Schedule ID"
 // @Success 200 {array} models.Seat
 // @Router /seats [get]
-func (h *SeatHandler) GetAvailableSeats(c *gin.Context) {
+func (h *SeatHandler) GetSoldSeats(c *gin.Context) {
 	scheduleID, err := strconv.Atoi(c.Query("schedule_id"))
 	if err != nil || scheduleID < 1 {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid schedule_id"})

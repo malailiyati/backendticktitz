@@ -11,13 +11,13 @@ type Schedule struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
-// hasil join schedule + time + location + cinema
 type ScheduleDetail struct {
 	ID       int       `json:"id"`
 	MovieID  int       `json:"movie_id"`
+	Title    string    `json:"title"`
 	Date     time.Time `json:"date"`
 	Time     string    `json:"time"`
 	Location string    `json:"location"`
 	Cinema   string    `json:"cinema"`
-	Price    int       `json:"price"`
+	Price    float64   `json:"price"`
 }

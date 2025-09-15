@@ -216,23 +216,6 @@ definitions:
       status:
         type: string
     type: object
-  models.ScheduleDetail:
-    properties:
-      cinema:
-        type: string
-      date:
-        type: string
-      id:
-        type: integer
-      location:
-        type: string
-      movie_id:
-        type: integer
-      price:
-        type: integer
-      time:
-        type: string
-    type: object
   models.Seat:
     properties:
       id:
@@ -242,15 +225,12 @@ definitions:
     type: object
   models.UpdatePasswordRequest:
     properties:
-      confirm_password:
-        type: string
       new_password:
         minLength: 8
         type: string
       old_password:
         type: string
     required:
-    - confirm_password
     - new_password
     - old_password
     type: object
@@ -286,6 +266,81 @@ paths:
       security:
       - JWTtoken: []
       summary: Get all movies (Admin)
+      tags:
+      - Admin
+    post:
+      consumes:
+      - multipart/form-data
+      description: Admin can create a new movie with poster & background upload
+      parameters:
+      - description: Movie Title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Synopsis
+        in: formData
+        name: synopsis
+        required: true
+        type: string
+      - description: Release Date (YYYY-MM-DD)
+        in: formData
+        name: release_date
+        required: true
+        type: string
+      - description: Duration (HH:MM:SS)
+        in: formData
+        name: duration
+        required: true
+        type: string
+      - description: Director ID
+        in: formData
+        name: director_id
+        required: true
+        type: integer
+      - description: Popularity
+        in: formData
+        name: popularity
+        type: integer
+      - description: Poster file
+        in: formData
+        name: poster
+        type: file
+      - description: Background poster file
+        in: formData
+        name: background_poster
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - JWTtoken: []
+      summary: Create new movie (admin only)
       tags:
       - Admin
   /admin/movies/{id}:
@@ -496,10 +551,6 @@ paths:
         in: query
         name: page
         type: integer
-      - description: Limit per page
-        in: query
-        name: limit
-        type: integer
       produces:
       - application/json
       responses:
@@ -515,11 +566,6 @@ paths:
   /movie/popular:
     get:
       description: Get list of popular movies ordered by popularity
-      parameters:
-      - description: Limit number of movies (default 10)
-        in: query
-        name: limit
-        type: integer
       produces:
       - application/json
       responses:
@@ -582,28 +628,54 @@ paths:
       - movies
   /schedule:
     get:
-      description: Get schedule list (date, time, location, cinema, price) for a movie
+      consumes:
+      - application/json
+      description: Get schedules based on date, time, location, and cinema
       parameters:
-      - description: Movie ID
+      - description: Schedule date (YYYY-MM-DD)
         in: query
-        name: movie_id
+        name: date
+        required: true
+        type: string
+      - description: Time ID
+        in: query
+        name: time_id
+        required: true
+        type: integer
+      - description: Location ID
+        in: query
+        name: location_id
+        required: true
+        type: integer
+      - description: Cinema ID
+        in: query
+        name: cinema_id
         required: true
         type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: success response with schedules
           schema:
-            items:
-              $ref: '#/definitions/models.ScheduleDetail'
-            type: array
-      summary: Get schedules by movie ID
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid input
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get schedules by filter
       tags:
       - schedules
   /seats:
     get:
-      description: Get all available (not booked) seats for a schedule
+      description: Get all sold seats for a schedule
       parameters:
       - description: Schedule ID
         in: query
@@ -619,7 +691,7 @@ paths:
             items:
               $ref: '#/definitions/models.Seat'
             type: array
-      summary: Get available seats by schedule
+      summary: Get sold seats by schedule
       tags:
       - seats
   /user/history:
@@ -731,16 +803,10 @@ paths:
       - JWTtoken: []
       summary: Ubah password user
       tags:
-      - User
+      - profile
   /user/profile:
     get:
       description: Get profile information by user_id (join users + profile)
-      parameters:
-      - description: User ID
-        in: query
-        name: user_id
-        required: true
-        type: integer
       produces:
       - application/json
       responses:
@@ -758,11 +824,6 @@ paths:
       - multipart/form-data
       description: Update firstname, lastname, phone, profile_picture
       parameters:
-      - description: User ID
-        in: query
-        name: user_id
-        required: true
-        type: integer
       - description: First Name
         in: formData
         name: first_name

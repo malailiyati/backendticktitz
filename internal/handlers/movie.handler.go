@@ -45,7 +45,6 @@ func (h *MovieHandler) GetUpcomingMovies(c *gin.Context) {
 // @Description Get list of popular movies ordered by popularity
 // @Tags movies
 // @Produce json
-// @Param limit query int false "Limit number of movies (default 10)"
 // @Success 200 {array} models.MovieResponse
 // @Router /movie/popular [get]
 func (h *MovieHandler) GetPopularMovies(c *gin.Context) {
@@ -71,7 +70,6 @@ func (h *MovieHandler) GetPopularMovies(c *gin.Context) {
 // @Param title query string false "Filter by title"
 // @Param genre query string false "Filter by genre"
 // @Param page query int false "Page number"
-// @Param limit query int false "Limit per page"
 // @Success 200 {array} models.MovieFilter
 // @Router /movie/ [get]
 func (h *MovieHandler) GetMoviesByFilter(c *gin.Context) {
@@ -79,12 +77,12 @@ func (h *MovieHandler) GetMoviesByFilter(c *gin.Context) {
 	genre := c.Query("genre")
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "12"))
 	if page < 1 {
 		page = 1
 	}
 	if limit < 1 {
-		limit = 20
+		limit = 12
 	}
 	offset := (page - 1) * limit
 

@@ -32,3 +32,14 @@ type UpdateMovieAdminBody struct {
 	Synopsis         string                `form:"synopsis"`
 	Popularity       string                `form:"popularity"`
 }
+
+type CreateMovieAdminBody struct {
+	Title            string                `form:"title" binding:"required"`
+	Synopsis         string                `form:"synopsis" binding:"required"`
+	ReleaseDate      string                `form:"release_date" binding:"required"`
+	Duration         string                `form:"duration" binding:"required"`
+	DirectorID       int                   `form:"director_id" binding:"required"`
+	Popularity       int                   `form:"popularity"`
+	Poster           *multipart.FileHeader `form:"poster"`
+	BackgroundPoster *multipart.FileHeader `form:"background_poster"`
+}

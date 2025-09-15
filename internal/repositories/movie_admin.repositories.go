@@ -137,3 +137,40 @@ func (r *MovieAdminRepository) UpdateMovie(ctx context.Context, id int, updates 
 
 	return m, nil
 }
+
+func (r *MovieAdminRepository) CreateMovie(ctx context.Context, movie models.Movie) (models.Movie, error) {
+	const q = `
+		INSERT INTO movies (title, synopsis, releasedate, duration, director_id, popularity, poster, background_poster)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+		RETURNING id, title, synopsis, releaseDate, duration, director_id, popularity, poster, background_poster, created_at, updated_at;
+	`
+
+	var m models.Movie
+	err := r.db.QueryRow(ctx, q,
+		movie.Title,
+		movie.Synopsis,
+		movie.ReleaseDate,
+		movie.Duration,
+		movie.DirectorID,
+		movie.Popularity,
+		movie.Poster,
+		movie.BackgroundPoster,
+	).Scan(
+		&m.ID,
+		&m.Title,
+		&m.Synopsis,
+		&m.ReleaseDate,
+		&m.Duration,
+		&m.DirectorID,
+		&m.Popularity,
+		&m.Poster,
+		&m.BackgroundPoster,
+		&m.CreatedAt,
+		&m.UpdatedAt,
+	)
+	if err != nil {
+		return m, err
+	}
+
+	return m, nil
+}

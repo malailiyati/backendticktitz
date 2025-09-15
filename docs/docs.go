@@ -55,6 +55,116 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "JWTtoken": []
+                    }
+                ],
+                "description": "Admin can create a new movie with poster \u0026 background upload",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Create new movie (admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Movie Title",
+                        "name": "title",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Synopsis",
+                        "name": "synopsis",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Release Date (YYYY-MM-DD)",
+                        "name": "release_date",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Duration (HH:MM:SS)",
+                        "name": "duration",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Director ID",
+                        "name": "director_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Popularity",
+                        "name": "popularity",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Poster file",
+                        "name": "poster",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Background poster file",
+                        "name": "background_poster",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
             }
         },
         "/admin/movies/{id}": {
@@ -374,12 +484,6 @@ const docTemplate = `{
                         "description": "Page number",
                         "name": "page",
                         "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit per page",
-                        "name": "limit",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -405,14 +509,6 @@ const docTemplate = `{
                     "movies"
                 ],
                 "summary": "Get Popular Movies",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Limit number of movies (default 10)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -501,31 +597,67 @@ const docTemplate = `{
         },
         "/schedule": {
             "get": {
-                "description": "Get schedule list (date, time, location, cinema, price) for a movie",
+                "description": "Get schedules based on date, time, location, and cinema",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "schedules"
                 ],
-                "summary": "Get schedules by movie ID",
+                "summary": "Get schedules by filter",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Schedule date (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "type": "integer",
-                        "description": "Movie ID",
-                        "name": "movie_id",
+                        "description": "Time ID",
+                        "name": "time_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Location ID",
+                        "name": "location_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cinema ID",
+                        "name": "cinema_id",
                         "in": "query",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "success response with schedules",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.ScheduleDetail"
-                            }
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -533,14 +665,14 @@ const docTemplate = `{
         },
         "/seats": {
             "get": {
-                "description": "Get all available (not booked) seats for a schedule",
+                "description": "Get all sold seats for a schedule",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "seats"
                 ],
-                "summary": "Get available seats by schedule",
+                "summary": "Get sold seats by schedule",
                 "parameters": [
                     {
                         "type": "integer",
@@ -653,7 +785,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "profile"
                 ],
                 "summary": "Ubah password user",
                 "parameters": [
@@ -770,15 +902,6 @@ const docTemplate = `{
                     "profile"
                 ],
                 "summary": "Get user profile",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -806,13 +929,6 @@ const docTemplate = `{
                 ],
                 "summary": "Update user profile",
                 "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "First Name",
@@ -1176,32 +1292,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ScheduleDetail": {
-            "type": "object",
-            "properties": {
-                "cinema": {
-                    "type": "string"
-                },
-                "date": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "movie_id": {
-                    "type": "integer"
-                },
-                "price": {
-                    "type": "integer"
-                },
-                "time": {
-                    "type": "string"
-                }
-            }
-        },
         "models.Seat": {
             "type": "object",
             "properties": {
@@ -1216,14 +1306,10 @@ const docTemplate = `{
         "models.UpdatePasswordRequest": {
             "type": "object",
             "required": [
-                "confirm_password",
                 "new_password",
                 "old_password"
             ],
             "properties": {
-                "confirm_password": {
-                    "type": "string"
-                },
                 "new_password": {
                     "type": "string",
                     "minLength": 8

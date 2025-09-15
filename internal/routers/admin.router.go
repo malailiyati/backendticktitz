@@ -20,6 +20,7 @@ func InitMovieAdminRouter(router *gin.Engine, db *pgxpool.Pool) {
 		admin.GET("/movies", movieAdminHandler.GetAllMovies)
 		admin.DELETE("/movies/:id", movieAdminHandler.DeleteMovie)
 		admin.PATCH("/movies/:id", movieAdminHandler.UpdateMovie)
+		admin.POST("/movies", movieAdminHandler.CreateMovie)
 	}
 
 }

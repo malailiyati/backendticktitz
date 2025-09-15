@@ -12,5 +12,5 @@ func InitSeatRouter(router *gin.Engine, db *pgxpool.Pool) {
 	seatRepo := repositories.NewSeatRepository(db)
 	seatHandler := handlers.NewSeatHandler(seatRepo)
 
-	router.GET("/seats", seatHandler.GetAvailableSeats)
+	router.GET("/seats", seatHandler.GetSoldSeats)
 }

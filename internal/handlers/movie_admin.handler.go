@@ -1,18 +1,16 @@
 package handlers
 
 import (
-	"fmt"
-	"mime/multipart"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/malailiyati/backend/internal/models"
 	"github.com/malailiyati/backend/internal/repositories"
+	"github.com/malailiyati/backend/internal/utils"
 	"github.com/malailiyati/backend/pkg"
 )
 
@@ -112,28 +110,6 @@ func (h *MovieAdminHandler) DeleteMovie(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Movie deleted successfully"})
 }
 
-func saveFile(c *gin.Context, file *multipart.FileHeader, folder, prefix string, id int) (string, string, error) {
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".jfif": true}
-	if !allowed[ext] {
-		return "", "", fmt.Errorf("invalid file type")
-	}
-	if file.Size > 5<<20 {
-		return "", "", fmt.Errorf("file too large")
-	}
-
-	os.MkdirAll("public/"+folder, os.ModePerm)
-	newName := fmt.Sprintf("%s_%d_%d%s", prefix, id, time.Now().UnixNano(), ext)
-	savePath := filepath.Join("public", folder, newName)
-
-	if err := c.SaveUploadedFile(file, savePath); err != nil {
-		return "", "", err
-	}
-
-	// return: relative path (buat DB), full path (buat rollback)
-	return "/" + folder + "/" + newName, savePath, nil
-}
-
 // @Summary Patch movie (Admin)
 // @Description Edit movie data (partial update, with optional poster upload)
 // @Tags Admin
@@ -198,7 +174,7 @@ func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 	}
 	if form.ReleaseDate != "" {
 		if t, err := time.Parse("2006-01-02", form.ReleaseDate); err == nil {
-			updates["release_date"] = t
+			updates["releasedate"] = t
 		}
 	}
 	if form.Duration != "" {
@@ -215,7 +191,7 @@ func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 
 	// --- Upload poster ---
 	if form.Poster != nil {
-		path, fullPath, err := saveFile(c, form.Poster, "posters", "poster", id)
+		path, fullPath, err := utils.SaveFile(c, form.Poster, "posters", "poster", id)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
 			return
@@ -226,7 +202,7 @@ func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 
 	// --- Upload background ---
 	if form.BackgroundPoster != nil {
-		path, fullPath, err := saveFile(c, form.BackgroundPoster, "backgrounds", "bg", id)
+		path, fullPath, err := utils.SaveFile(c, form.BackgroundPoster, "backgrounds", "bg", id)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
 			return
@@ -254,5 +230,99 @@ func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 		"success": true,
 		"message": "Movie updated successfully",
 		"data":    movie,
+	})
+}
+
+// CreateMovie godoc
+// @Summary      Create new movie (admin only)
+// @Description  Admin can create a new movie with poster & background upload
+// @Tags         Admin
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        title             formData string true  "Movie Title"
+// @Param        synopsis          formData string true  "Synopsis"
+// @Param        release_date      formData string true  "Release Date (YYYY-MM-DD)"
+// @Param        duration          formData string true  "Duration (HH:MM:SS)"
+// @Param        director_id       formData int    true  "Director ID"
+// @Param        popularity        formData int    false "Popularity"
+// @Param        poster            formData file   false "Poster file"
+// @Param        background_poster formData file   false "Background poster file"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400 {object} map[string]interface{}
+// @Failure      401 {object} map[string]interface{}
+// @Failure      403 {object} map[string]interface{}
+// @Failure      500 {object} map[string]interface{}
+// @Security     JWTtoken
+// @Router       /admin/movies [post]
+func (h *MovieAdminHandler) CreateMovie(c *gin.Context) {
+	var form models.CreateMovieAdminBody
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+		return
+	}
+
+	// --- Parse release_date ---
+	releaseDate, err := time.Parse("2006-01-02", form.ReleaseDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid release_date format"})
+		return
+	}
+
+	// --- Parse duration (format HH:MM:SS) ---
+	var duration pgtype.Interval
+	if form.Duration != "" {
+		if d, err := time.ParseDuration(form.Duration); err == nil {
+			duration = pgtype.Interval{Microseconds: d.Microseconds(), Valid: true}
+		}
+	}
+
+	movie := models.Movie{
+		Title:       form.Title,
+		Synopsis:    form.Synopsis,
+		ReleaseDate: releaseDate,
+		Duration:    duration,
+		DirectorID:  form.DirectorID,
+		Popularity:  form.Popularity,
+	}
+
+	rollbackFiles := []string{}
+
+	// --- Upload poster ---
+	if form.Poster != nil {
+		path, fullPath, err := utils.SaveFile(c, form.Poster, "posters", "poster", 0)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+			return
+		}
+		movie.Poster = path
+		rollbackFiles = append(rollbackFiles, fullPath)
+	}
+
+	// --- Upload background poster ---
+	if form.BackgroundPoster != nil {
+		path, fullPath, err := utils.SaveFile(c, form.BackgroundPoster, "backgrounds", "bg", 0)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+			return
+		}
+		movie.BackgroundPoster = path
+		rollbackFiles = append(rollbackFiles, fullPath)
+	}
+
+	// --- Insert DB ---
+	newMovie, err := h.repo.CreateMovie(c.Request.Context(), movie)
+	if err != nil {
+		// rollback kalau DB gagal
+		for _, f := range rollbackFiles {
+			_ = os.Remove(f)
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"message": "Movie created successfully",
+		"data":    newMovie,
 	})
 }

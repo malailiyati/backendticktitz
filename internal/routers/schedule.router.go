@@ -12,5 +12,5 @@ func InitScheduleRouter(router *gin.Engine, db *pgxpool.Pool) {
 	scheduleRepo := repositories.NewScheduleRepository(db)
 	scheduleHandler := handlers.NewScheduleHandler(scheduleRepo)
 
-	router.GET("/schedule", scheduleHandler.GetSchedulesByMovie)
+	router.GET("/schedule", scheduleHandler.GetSchedules)
 }

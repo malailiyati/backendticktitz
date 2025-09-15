@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,7 +29,6 @@ func NewProfileHandler(repo *repositories.ProfileRepository) *ProfileHandler {
 // @Tags profile
 // @Accept multipart/form-data
 // @Produce json
-// @Param user_id query int true "User ID"
 // @Param first_name formData string false "First Name"
 // @Param last_name formData string false "Last Name"
 // @Param phone formData string false "Phone"
@@ -39,9 +37,21 @@ func NewProfileHandler(repo *repositories.ProfileRepository) *ProfileHandler {
 // @Security JWTtoken
 // @Router /user/profile [patch]
 func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
-	userID, err := strconv.Atoi(c.Query("user_id"))
-	if err != nil || userID < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid user_id"})
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "User ID tidak ditemukan di token",
+		})
+		return
+	}
+
+	userID, ok := userIDVal.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "User ID tidak valid",
+		})
 		return
 	}
 
@@ -104,29 +114,49 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 // @Description Get profile information by user_id (join users + profile)
 // @Tags profile
 // @Produce json
-// @Param user_id query int true "User ID"
 // @Success 200 {object} models.ProfileResponse
 // @Security JWTtoken
 // @Router /user/profile [get]
-func (h *ProfileHandler) GetProfile(c *gin.Context) {
-	userID, err := strconv.Atoi(c.Query("user_id"))
-	if err != nil || userID < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid user_id"})
+func (h *ProfileHandler) GetProfile(ctx *gin.Context) {
+	// ambil user_id dari context (sudah di-set di middleware)
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "User ID tidak ditemukan di token",
+		})
 		return
 	}
 
-	profile, err := h.repo.GetProfileByUserID(c.Request.Context(), userID)
+	// convert ke int (atau tipe sesuai di database)
+	uid, ok := userID.(int)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Format user ID tidak valid",
+		})
+		return
+	}
+
+	// panggil repo untuk ambil profile
+	profile, err := h.repo.GetProfileByUserID(ctx.Request.Context(), uid)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"success": false, "error": "profile not found"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": profile})
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    profile,
+	})
 }
 
 // UpdatePassword godoc
 // @Summary Ubah password user
-// @Tags User
+// @Tags profile
 // @Security JWTtoken
 // @Accept json
 // @Produce json
@@ -144,10 +174,10 @@ func (h *ProfileHandler) UpdatePassword(ctx *gin.Context) {
 	}
 
 	// cek confirm password
-	if req.NewPassword != req.ConfirmPassword {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Password baru tidak sama"})
-		return
-	}
+	// if req.NewPassword != req.ConfirmPassword {
+	// 	ctx.JSON(http.StatusBadRequest, gin.H{"error": "Password baru tidak sama"})
+	// 	return
+	// }
 
 	// validasi strength password baru
 	if err := utils.ValidatePassword(req.NewPassword); err != nil {
