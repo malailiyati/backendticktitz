@@ -110,7 +110,7 @@ func (h *MovieHandler) GetMoviesByFilter(c *gin.Context) {
 // @Success 200 {object} models.MovieResponse
 // @Failure      400        {object}  map[string]string
 // @Failure      404        {object}  map[string]string
-// @Router       /movies/{movie_id} [get]
+// @Router       /movie/{movie_id} [get]
 func (h *MovieHandler) GetMovieDetail(c *gin.Context) {
 	movieID := c.Param("movie_id")
 	id, err := strconv.Atoi(movieID)

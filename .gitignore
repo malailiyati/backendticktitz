@@ -5,3 +5,5 @@
 .fresh.yaml
 
 tmp/
+
+public/

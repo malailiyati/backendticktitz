@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -17,7 +18,8 @@ func SaveFile(c *gin.Context, file *multipart.FileHeader, folder, prefix string,
 	if !allowed[ext] {
 		return "", "", fmt.Errorf("invalid file type")
 	}
-	if file.Size > 5<<20 {
+	log.Println(file.Size)
+	if file.Size > 500*1024 {
 		return "", "", fmt.Errorf("file too large")
 	}
 

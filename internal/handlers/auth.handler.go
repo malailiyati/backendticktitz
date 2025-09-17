@@ -3,12 +3,15 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/malailiyati/backend/internal/models"
 	"github.com/malailiyati/backend/internal/repositories"
 	"github.com/malailiyati/backend/internal/utils"
 	"github.com/malailiyati/backend/pkg"
+	"github.com/redis/go-redis/v9"
 )
 
 type AuthHandler struct {
@@ -167,10 +170,42 @@ func (a *AuthHandler) Register(ctx *gin.Context) {
 // @Tags auth
 // @Produce json
 // @Success 200 {object} models.Response
+// @Security JWTtoken
 // @Router /auth/logout [post]
-func (a *AuthHandler) Logout(ctx *gin.Context) {
+func (a *AuthHandler) Logout(ctx *gin.Context, rdb *redis.Client) {
+	authHeader := ctx.GetHeader("Authorization")
+	if authHeader == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Token tidak ditemukan",
+		})
+		return
+	}
+
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+	var claims pkg.Claims
+	if err := claims.VerifyToken(tokenString); err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "Token tidak valid",
+		})
+		return
+	}
+
+	exp := time.Until(claims.ExpiresAt.Time)
+
+	// simpan token ke Redis blacklist dengan TTL = sisa expired
+	if err := rdb.Set(ctx, "blacklist:"+tokenString, true, exp).Err(); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Gagal blacklist token",
+		})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Logout berhasil",
+		"message": "Logout berhasil, token di-blacklist",
 	})
 }

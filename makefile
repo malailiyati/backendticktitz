@@ -22,7 +22,6 @@ insert-seed:
 
 # full migration (up + seed)
 migrate-full:
-	make migrate-up
-	make insert-seed
+	make migrate-up insert-seed
 
 

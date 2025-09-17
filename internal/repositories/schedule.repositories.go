@@ -15,7 +15,7 @@ func NewScheduleRepository(db *pgxpool.Pool) *ScheduleRepository {
 	return &ScheduleRepository{db: db}
 }
 
-func (r *ScheduleRepository) GetSchedules(ctx context.Context, date string, timeID, locationID, cinemaID int) ([]models.ScheduleDetail, error) {
+func (r *ScheduleRepository) GetSchedules(ctx context.Context, date string, timeID, locationID, movieID int) ([]models.ScheduleDetail, error) {
 	const q = `
 		SELECT s.id, s.movie_id, m.title, s.date, t.time, l.location, c.name, c.price
 		FROM schedule s
@@ -23,14 +23,14 @@ func (r *ScheduleRepository) GetSchedules(ctx context.Context, date string, time
 		JOIN time t ON t.id = s.time_id
 		JOIN location l ON l.id = s.location_id
 		JOIN cinema c ON c.id = s.cinema_id
-		WHERE s.date = $1
-		  AND s.time_id = $2
-		  AND s.location_id = $3
-		  AND s.cinema_id = $4
+		WHERE ($1 = '' OR s.date::date = $1::date)
+		AND ($2 = 0 OR s.time_id = $2)
+		AND ($3 = 0 OR s.location_id = $3)
+		AND ($4 = 0 OR s.movie_id = $4)
 		ORDER BY m.title;
 	`
 
-	rows, err := r.db.Query(ctx, q, date, timeID, locationID, cinemaID)
+	rows, err := r.db.Query(ctx, q, date, timeID, locationID, movieID)
 	if err != nil {
 		return nil, err
 	}

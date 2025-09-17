@@ -8,7 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// definisikan isi dari jwt kalian
+// definisikan isi dari jwt
 type Claims struct {
 	UserId int    `json:"id"`
 	Role   string `json:"role"`

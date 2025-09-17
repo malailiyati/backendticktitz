@@ -34,12 +34,12 @@ func InitRouter(db *pgxpool.Pool, rdb *redis.Client) *gin.Engine {
 
 	// setup routing
 	// InitPingRouter(router)
-	InitAuthRouter(router, db)
+	InitAuthRouter(router, db, rdb)
 	InitMovieRouter(router, db, rdb)
 	InitScheduleRouter(router, db)
 	InitSeatRouter(router, db)
-	InitUserRouter(router, db)
-	InitMovieAdminRouter(router, db)
+	InitUserRouter(router, db, rdb)
+	InitMovieAdminRouter(router, db, rdb)
 
 	// catch all route
 	router.NoRoute(func(ctx *gin.Context) {

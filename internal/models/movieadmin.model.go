@@ -18,8 +18,8 @@ type MovieAdmin struct {
 	DurationText     string          `json:"duration"` // untuk response JSON
 	Synopsis         string          `json:"synopsis"`
 	Popularity       int             `json:"popularity"`
-	CreatedAt        time.Time       `json:"created_at"`
-	UpdatedAt        time.Time       `json:"updated_at"`
+	CreatedAt        *time.Time      `json:"created_at"`
+	UpdatedAt        *time.Time      `json:"updated_at"`
 }
 
 type UpdateMovieAdminBody struct {

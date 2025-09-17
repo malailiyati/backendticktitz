@@ -165,7 +165,7 @@ func (h *ProfileHandler) GetProfile(ctx *gin.Context) {
 // @Failure 400 {object} map[string]string{error=string}
 // @Failure 401 {object} map[string]string{error=string}
 // @Failure 404 {object} map[string]string{error=string}
-// @Router /user/password [put]
+// @Router /user/password [patch]
 func (h *ProfileHandler) UpdatePassword(ctx *gin.Context) {
 	var req models.UpdatePasswordRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

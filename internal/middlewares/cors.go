@@ -14,7 +14,7 @@ func CORSMiddleware(ctx *gin.Context) {
 	// }
 	// memasangkan header-header CORS
 	// setup whitelist origin
-	whitelist := []string{"http://127.0.0.1:5500", "http://127.0.0.1:3001", "http://localhost:8080"}
+	whitelist := []string{"http://127.0.0.1:5500", "http://127.0.0.1:3001", "http://localhost:8080", "http://localhost:5173"}
 	origin := ctx.GetHeader("Origin")
 	if slices.Contains(whitelist, origin) {
 		ctx.Header("Access-Control-Allow-Origin", origin)

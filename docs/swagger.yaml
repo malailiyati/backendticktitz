@@ -506,6 +506,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Response'
+      security:
+      - JWTtoken: []
       summary: Logout user
       tags:
       - auth
@@ -563,37 +565,7 @@ paths:
       summary: Get Movies by Filter
       tags:
       - movies
-  /movie/popular:
-    get:
-      description: Get list of popular movies ordered by popularity
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.MovieResponse'
-            type: array
-      summary: Get Popular Movies
-      tags:
-      - movies
-  /movie/upcoming:
-    get:
-      description: Get list of upcoming movies (releaseDate > today)
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.MovieResponse'
-            type: array
-      summary: Get Upcoming Movies
-      tags:
-      - movies
-  /movies/{movie_id}:
+  /movie/{movie_id}:
     get:
       consumes:
       - application/json
@@ -626,31 +598,28 @@ paths:
       summary: Get movie detail
       tags:
       - movies
-  /schedule:
+  /movie/{movie_id}/schedule:
     get:
       consumes:
       - application/json
-      description: Get schedules based on date, time, location, and cinema
+      description: Get schedules based on date, time, location, and movie
       parameters:
+      - description: Movie ID
+        in: path
+        name: movie_id
+        required: true
+        type: integer
       - description: Schedule date (YYYY-MM-DD)
         in: query
         name: date
-        required: true
         type: string
       - description: Time ID
         in: query
         name: time_id
-        required: true
         type: integer
       - description: Location ID
         in: query
         name: location_id
-        required: true
-        type: integer
-      - description: Cinema ID
-        in: query
-        name: cinema_id
-        required: true
         type: integer
       produces:
       - application/json
@@ -672,7 +641,37 @@ paths:
             type: object
       summary: Get schedules by filter
       tags:
-      - schedules
+      - orders
+  /movie/popular:
+    get:
+      description: Get list of popular movies ordered by popularity
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.MovieResponse'
+            type: array
+      summary: Get Popular Movies
+      tags:
+      - movies
+  /movie/upcoming:
+    get:
+      description: Get list of upcoming movies (releaseDate > today)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.MovieResponse'
+            type: array
+      summary: Get Upcoming Movies
+      tags:
+      - movies
   /seats:
     get:
       description: Get all sold seats for a schedule
@@ -697,12 +696,6 @@ paths:
   /user/history:
     get:
       description: Get all order history for a user
-      parameters:
-      - description: User ID
-        in: query
-        name: user_id
-        required: true
-        type: integer
       produces:
       - application/json
       responses:
@@ -716,7 +709,7 @@ paths:
       - JWTtoken: []
       summary: Get order history
       tags:
-      - history
+      - profile
   /user/orders:
     post:
       consumes:
@@ -742,7 +735,7 @@ paths:
       tags:
       - orders
   /user/password:
-    put:
+    patch:
       consumes:
       - application/json
       parameters:

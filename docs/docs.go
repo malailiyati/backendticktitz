@@ -398,6 +398,11 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
+                "security": [
+                    {
+                        "JWTtoken": []
+                    }
+                ],
                 "description": "Menghapus session (stateless di JWT)",
                 "produces": [
                     "application/json"
@@ -545,7 +550,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/movies/{movie_id}": {
+        "/movie/{movie_id}": {
             "get": {
                 "description": "Get movie detail by ID",
                 "consumes": [
@@ -595,9 +600,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule": {
+        "/movie/{movie_id}/schedule": {
             "get": {
-                "description": "Get schedules based on date, time, location, and cinema",
+                "description": "Get schedules based on date, time, location, and movie",
                 "consumes": [
                     "application/json"
                 ],
@@ -605,37 +610,34 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "schedules"
+                    "orders"
                 ],
                 "summary": "Get schedules by filter",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "Movie ID",
+                        "name": "movie_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "string",
                         "description": "Schedule date (YYYY-MM-DD)",
                         "name": "date",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Time ID",
                         "name": "time_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Location ID",
                         "name": "location_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cinema ID",
-                        "name": "cinema_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -707,18 +709,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "history"
+                    "profile"
                 ],
                 "summary": "Get order history",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -772,7 +765,7 @@ const docTemplate = `{
             }
         },
         "/user/password": {
-            "put": {
+            "patch": {
                 "security": [
                     {
                         "JWTtoken": []

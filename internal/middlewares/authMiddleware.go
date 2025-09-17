@@ -6,9 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/malailiyati/backend/pkg"
+	"github.com/redis/go-redis/v9"
 )
 
-func AuthMiddleware(allowedRoles ...string) gin.HandlerFunc {
+func AuthMiddleware(rdb *redis.Client, allowedRoles ...string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		bearerToken := ctx.GetHeader("Authorization")
 		parts := strings.SplitN(bearerToken, " ", 2)
@@ -20,6 +21,16 @@ func AuthMiddleware(allowedRoles ...string) gin.HandlerFunc {
 			return
 		}
 		token := parts[1]
+
+		// cek blacklist di Redis
+		exists, _ := rdb.Get(ctx, "blacklist:"+token).Result()
+		if exists != "" {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"error":   "Token sudah logout",
+			})
+			return
+		}
 
 		var claims pkg.Claims
 		if err := claims.VerifyToken(token); err != nil {

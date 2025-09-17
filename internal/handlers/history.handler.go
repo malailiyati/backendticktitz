@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/malailiyati/backend/internal/repositories"
@@ -19,16 +18,27 @@ func NewHistoryHandler(repo *repositories.HistoryRepository) *HistoryHandler {
 // GetHistory godoc
 // @Summary Get order history
 // @Description Get all order history for a user
-// @Tags history
+// @Tags profile
 // @Produce json
-// @Param user_id query int true "User ID"
 // @Success 200 {array} models.OrderHistory
 // @Security JWTtoken
 // @Router /user/history [get]
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
-	userID, err := strconv.Atoi(c.Query("user_id"))
-	if err != nil || userID < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid user_id"})
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "User ID tidak ditemukan di token",
+		})
+		return
+	}
+
+	userID, ok := userIDVal.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "User ID tidak valid",
+		})
 		return
 	}
 
