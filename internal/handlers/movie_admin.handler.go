@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -122,6 +123,8 @@ func (h *MovieAdminHandler) DeleteMovie(c *gin.Context) {
 // @Param background_poster formData file false "Background Poster file"
 // @Param release_date formData string false "Release Date (YYYY-MM-DD)"
 // @Param duration formData string false "Duration (e.g. 02:28)"
+// @Param genres formData []int false "Genres"
+// @Param casts  formData []int false "Casts"
 // @Param synopsis formData string false "Synopsis"
 // @Param popularity formData int false "Popularity"
 // @Success 200 {object} map[string]interface{}
@@ -211,8 +214,26 @@ func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 		rollbackFiles = append(rollbackFiles, fullPath)
 	}
 
+	// --- Parse genres ---
+	var genres []int
+	if form.Genres != "" {
+		for _, g := range strings.Split(form.Genres, ",") {
+			gid, _ := strconv.Atoi(strings.TrimSpace(g))
+			genres = append(genres, gid)
+		}
+	}
+
+	// --- Parse casts ---
+	var casts []int
+	if form.Casts != "" {
+		for _, cID := range strings.Split(form.Casts, ",") {
+			cid, _ := strconv.Atoi(strings.TrimSpace(cID))
+			casts = append(casts, cid)
+		}
+	}
+
 	// --- Update DB ---
-	movie, err := h.repo.UpdateMovie(c.Request.Context(), id, updates)
+	movie, err := h.repo.UpdateMovie(c.Request.Context(), id, updates, genres, casts)
 	if err != nil {
 		// rollback file kalau DB gagal
 		for _, f := range rollbackFiles {
@@ -245,6 +266,8 @@ func (h *MovieAdminHandler) UpdateMovie(c *gin.Context) {
 // @Param        duration          formData string true  "Duration (HH:MM:SS)"
 // @Param        director_id       formData int    true  "Director ID"
 // @Param        popularity        formData int    false "Popularity"
+// @Param genres formData []int false "Genres"
+// @Param casts  formData []int false "Casts"
 // @Param        poster            formData file   false "Poster file"
 // @Param        background_poster formData file   false "Background poster file"
 // @Success      201 {object} map[string]interface{}
@@ -276,6 +299,22 @@ func (h *MovieAdminHandler) CreateMovie(c *gin.Context) {
 		}
 	}
 
+	var genres []int
+	if form.Genres != "" {
+		for _, g := range strings.Split(form.Genres, ",") {
+			gid, _ := strconv.Atoi(strings.TrimSpace(g))
+			genres = append(genres, gid)
+		}
+	}
+
+	var casts []int
+	if form.Casts != "" {
+		for _, c := range strings.Split(form.Casts, ",") {
+			cid, _ := strconv.Atoi(strings.TrimSpace(c))
+			casts = append(casts, cid)
+		}
+	}
+
 	movie := models.Movie{
 		Title:       form.Title,
 		Synopsis:    form.Synopsis,
@@ -283,6 +322,8 @@ func (h *MovieAdminHandler) CreateMovie(c *gin.Context) {
 		Duration:    duration,
 		DirectorID:  form.DirectorID,
 		Popularity:  form.Popularity,
+		Genres:      genres,
+		Casts:       casts,
 	}
 
 	rollbackFiles := []string{}

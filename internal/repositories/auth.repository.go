@@ -35,6 +35,11 @@ func (a *AuthRepository) GetUserWithPasswordAndRole(rctx context.Context, email 
 }
 
 func (a *AuthRepository) CreateUser(ctx context.Context, email, hashedPass string, role *string) (models.User, error) {
+	tx, err := a.db.Begin(ctx)
+	if err != nil {
+		return models.User{}, err
+	}
+	defer tx.Rollback(ctx)
 	sql := `
         INSERT INTO users (email, password, role) 
         VALUES ($1, $2, $3)
@@ -50,6 +55,19 @@ func (a *AuthRepository) CreateUser(ctx context.Context, email, hashedPass strin
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	); err != nil {
+		return models.User{}, err
+	}
+
+	// Insert default profile kosong
+	const qProfile = `
+		INSERT INTO profile (users_id, firstname, lastname, phone, profile_picture)
+		VALUES ($1, '', '', '', '')
+	`
+	if _, err := tx.Exec(ctx, qProfile, user.Id); err != nil {
+		return models.User{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return models.User{}, err
 	}
 	return user, nil

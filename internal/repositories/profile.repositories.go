@@ -22,6 +22,12 @@ func (r *ProfileRepository) UpdateProfile(ctx context.Context, userID int, updat
 		return nil, fmt.Errorf("no fields to update")
 	}
 
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
 	setClause := []string{}
 	args := []interface{}{}
 	i := 1
@@ -42,12 +48,16 @@ func (r *ProfileRepository) UpdateProfile(ctx context.Context, userID int, updat
 	args = append(args, userID)
 
 	var p models.Profile
-	err := r.db.QueryRow(ctx, query, args...).Scan(
+	err = tx.QueryRow(ctx, query, args...).Scan(
 		&p.ID, &p.UserID, &p.FirstName, &p.LastName,
 		&p.Phone, &p.ProfilePicture,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
+		return nil, fmt.Errorf("update profile failed: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 

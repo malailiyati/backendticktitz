@@ -18,6 +18,8 @@ type MovieAdmin struct {
 	DurationText     string          `json:"duration"` // untuk response JSON
 	Synopsis         string          `json:"synopsis"`
 	Popularity       int             `json:"popularity"`
+	Genres           []int           `json:"genres"`
+	Casts            []int           `json:"casts"`
 	CreatedAt        *time.Time      `json:"created_at"`
 	UpdatedAt        *time.Time      `json:"updated_at"`
 }
@@ -31,6 +33,8 @@ type UpdateMovieAdminBody struct {
 	Duration         string                `form:"duration"`     // e.g. 02:35
 	Synopsis         string                `form:"synopsis"`
 	Popularity       string                `form:"popularity"`
+	Genres           string                `form:"genres"`
+	Casts            string                `form:"casts"`
 }
 
 type CreateMovieAdminBody struct {
@@ -42,4 +46,16 @@ type CreateMovieAdminBody struct {
 	Popularity       int                   `form:"popularity"`
 	Poster           *multipart.FileHeader `form:"poster"`
 	BackgroundPoster *multipart.FileHeader `form:"background_poster"`
+	Genres           string                `form:"genres"`
+	Casts            string                `form:"casts"`
+}
+
+type Genre struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Cast struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }

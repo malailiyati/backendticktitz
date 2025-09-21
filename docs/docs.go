@@ -116,6 +116,26 @@ const docTemplate = `{
                         "in": "formData"
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Genres",
+                        "name": "genres",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Casts",
+                        "name": "casts",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "Poster file",
                         "name": "poster",
@@ -295,6 +315,26 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Duration (e.g. 02:28)",
                         "name": "duration",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Genres",
+                        "name": "genres",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Casts",
+                        "name": "casts",
                         "in": "formData"
                     },
                     {
@@ -1019,6 +1059,12 @@ const docTemplate = `{
                 "background_poster": {
                     "type": "string"
                 },
+                "casts": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1028,6 +1074,12 @@ const docTemplate = `{
                 "duration": {
                     "description": "untuk response JSON",
                     "type": "string"
+                },
+                "genres": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "id": {
                     "type": "integer"

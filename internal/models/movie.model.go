@@ -13,9 +13,12 @@ type Movie struct {
 	Poster           string          `json:"poster"`
 	BackgroundPoster string          `json:"background_poster"`
 	ReleaseDate      time.Time       `json:"release_date"`
-	Duration         pgtype.Interval `json:"-"`
+	Duration         pgtype.Interval `json:"-"` // <- ini masalahnya
+	DurationText     string          `json:"duration"`
 	Synopsis         string          `json:"synopsis"`
 	Popularity       int             `json:"popularity"`
+	Genres           []int           `json:"genres"`
+	Casts            []int           `json:"casts"`
 	CreatedAt        time.Time       `json:"created_at"`
 	UpdatedAt        time.Time       `json:"updated_at"`
 }

@@ -40,6 +40,10 @@ definitions:
     properties:
       background_poster:
         type: string
+      casts:
+        items:
+          type: integer
+        type: array
       created_at:
         type: string
       director_id:
@@ -47,6 +51,10 @@ definitions:
       duration:
         description: untuk response JSON
         type: string
+      genres:
+        items:
+          type: integer
+        type: array
       id:
         type: integer
       popularity:
@@ -302,6 +310,20 @@ paths:
         in: formData
         name: popularity
         type: integer
+      - collectionFormat: csv
+        description: Genres
+        in: formData
+        items:
+          type: integer
+        name: genres
+        type: array
+      - collectionFormat: csv
+        description: Casts
+        in: formData
+        items:
+          type: integer
+        name: casts
+        type: array
       - description: Poster file
         in: formData
         name: poster
@@ -424,6 +446,20 @@ paths:
         in: formData
         name: duration
         type: string
+      - collectionFormat: csv
+        description: Genres
+        in: formData
+        items:
+          type: integer
+        name: genres
+        type: array
+      - collectionFormat: csv
+        description: Casts
+        in: formData
+        items:
+          type: integer
+        name: casts
+        type: array
       - description: Synopsis
         in: formData
         name: synopsis
