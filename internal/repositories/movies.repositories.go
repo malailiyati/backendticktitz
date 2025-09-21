@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -27,7 +28,7 @@ func NewMovieRepository(db *pgxpool.Pool, rdb *redis.Client) *MovieRepository {
 func (r *MovieRepository) GetUpcomingMovies(ctx context.Context) ([]models.MovieSimpleResponse, error) {
 	// cache-aside pattern
 	// cek redis terlebih dahulu
-	redisKey := "lala:movie-popular"
+	redisKey := "lala:movie-upcoming"
 	cmd := r.rdb.Get(ctx, redisKey)
 	if cmd.Err() != nil {
 		if cmd.Err() == redis.Nil {
@@ -168,6 +169,21 @@ func (r *MovieRepository) GetPopularMovies(ctx context.Context, limit int) ([]mo
 }
 
 func (r *MovieRepository) GetMoviesByFilter(ctx context.Context, title, genre string, limit, offset int) ([]models.MovieSimpleResponse, error) {
+	var redisKey string
+	useCache := offset == 0 // hanya cache page 1
+
+	if useCache {
+		redisKey = fmt.Sprintf("movies:filter:title=%s:genre=%s:limit=%d", title, genre, limit)
+		if val, err := r.rdb.Get(ctx, redisKey).Result(); err == nil {
+			var cached []models.MovieSimpleResponse
+			if jsonErr := json.Unmarshal([]byte(val), &cached); jsonErr == nil {
+				return cached, nil
+			}
+		} else if err != redis.Nil {
+			log.Println("Redis Error:", err.Error())
+		}
+	}
+
 	const q = `
 		SELECT m.id, m.title, m.poster,
 		       string_agg(g.name, ',') AS genres
@@ -206,6 +222,12 @@ func (r *MovieRepository) GetMoviesByFilter(ctx context.Context, title, genre st
 		}
 		movies = append(movies, m)
 	}
+
+	if useCache && len(movies) > 0 {
+		bt, _ := json.Marshal(movies)
+		_ = r.rdb.Set(ctx, redisKey, bt, 10*time.Minute).Err()
+	}
+
 	return movies, nil
 }
 
