@@ -2,15 +2,16 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/lib/pq"
 	"github.com/malailiyati/backend/internal/models"
 	"github.com/malailiyati/backend/internal/utils"
 	"github.com/redis/go-redis/v9"
@@ -25,46 +26,32 @@ func NewMovieRepository(db *pgxpool.Pool, rdb *redis.Client) *MovieRepository {
 	return &MovieRepository{db: db, rdb: rdb}
 }
 
-func (r *MovieRepository) GetUpcomingMovies(ctx context.Context) ([]models.MovieSimpleResponse, error) {
-	// cache-aside pattern
-	// cek redis terlebih dahulu
+func (r *MovieRepository) GetUpcomingMovies(ctx context.Context, limit int) ([]models.MovieSimpleResponse, error) {
 	redisKey := "lala:movie-upcoming"
 	cmd := r.rdb.Get(ctx, redisKey)
-	if cmd.Err() != nil {
-		if cmd.Err() == redis.Nil {
-			log.Printf("Key %s does not exist\n", redisKey)
-		} else {
-			log.Println("Redis Error. \nCause: ", cmd.Err().Error())
-		}
-	} else {
-		// cache hit
+	if cmd.Err() == nil {
 		var cachedMovie []models.MovieSimpleResponse
-		cmdByte, err := cmd.Bytes()
-		if err != nil {
-			log.Println("Internal Server Error.\nCause: ", err.Error())
-		} else {
-			if err := json.Unmarshal(cmdByte, &cachedMovie); err != nil {
-				log.Println("Internal Server Error.\nCause: ", err.Error())
-			}
-			if len(cachedMovie) > 0 {
-				return cachedMovie, nil
-			}
+		if err := json.Unmarshal([]byte(cmd.Val()), &cachedMovie); err == nil && len(cachedMovie) > 0 {
+			return cachedMovie, nil
 		}
 	}
 
 	const q = `
-		SELECT m.id, m.title, m.poster,
-		       string_agg(g.name, ',') AS genres
+		SELECT
+			m.id,
+			m.title,
+			COALESCE(m.poster, '') AS poster,
+			COALESCE(array_agg(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL), ARRAY[]::text[]) AS genres
 		FROM movies m
-		LEFT JOIN movie_genre mg ON mg.movie_id = m.id
-		LEFT JOIN genres g ON g.id = mg.genre_id
-		WHERE m.releaseDate > CURRENT_DATE 
-		  AND m.deleted_at IS NULL
+		LEFT JOIN movie_genre mg ON m.id = mg.movie_id
+		LEFT JOIN genres g ON mg.genre_id = g.id
+		WHERE m.releasedate::date >= CURRENT_DATE
 		GROUP BY m.id, m.title, m.poster
-		ORDER BY m.releaseDate ASC, m.id;
+		ORDER BY m.releasedate ASC
+		LIMIT $1;
 	`
 
-	rows, err := r.db.Query(ctx, q)
+	rows, err := r.db.Query(ctx, q, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -73,25 +60,16 @@ func (r *MovieRepository) GetUpcomingMovies(ctx context.Context) ([]models.Movie
 	var movies []models.MovieSimpleResponse
 	for rows.Next() {
 		var m models.MovieSimpleResponse
-		var genres sql.NullString
-
-		if err := rows.Scan(&m.ID, &m.Title, &m.Poster, &genres); err != nil {
+		var genres []string
+		if err := rows.Scan(&m.ID, &m.Title, &m.Poster, pq.Array(&genres)); err != nil {
 			return nil, err
 		}
-		if genres.Valid {
-			m.Genres = genres.String
-		}
+		m.Genres = genres
 		movies = append(movies, m)
 	}
-	// renew cache
-	bt, err := json.Marshal(movies)
-	if err != nil {
-		log.Println("Internal Server Error.\nCause: ", err.Error())
-	} else {
-		if err := r.rdb.Set(ctx, redisKey, string(bt), 5*time.Minute).Err(); err != nil {
-			log.Println("Redis Error.\nCause: ", err.Error())
-		}
-	}
+
+	bt, _ := json.Marshal(movies)
+	_ = r.rdb.Set(ctx, redisKey, string(bt), 5*time.Minute).Err()
 
 	return movies, nil
 }
@@ -125,7 +103,7 @@ func (r *MovieRepository) GetPopularMovies(ctx context.Context, limit int) ([]mo
 
 	const q = `
 		SELECT m.id, m.title, m.poster,
-		       string_agg(g.name, ',') AS genres
+		       array_agg(g.name) AS genres
 		FROM movies m
 		LEFT JOIN movie_genre mg ON mg.movie_id = m.id
 		LEFT JOIN genres g ON g.id = mg.genre_id
@@ -144,14 +122,12 @@ func (r *MovieRepository) GetPopularMovies(ctx context.Context, limit int) ([]mo
 	var movies []models.MovieSimpleResponse
 	for rows.Next() {
 		var m models.MovieSimpleResponse
-		var genres sql.NullString
+		var genres []string
 
 		if err := rows.Scan(&m.ID, &m.Title, &m.Poster, &genres); err != nil {
 			return nil, err
 		}
-		if genres.Valid {
-			m.Genres = genres.String
-		}
+		m.Genres = genres
 		movies = append(movies, m)
 	}
 
@@ -168,12 +144,12 @@ func (r *MovieRepository) GetPopularMovies(ctx context.Context, limit int) ([]mo
 	return movies, nil
 }
 
-func (r *MovieRepository) GetMoviesByFilter(ctx context.Context, title, genre string, limit, offset int) ([]models.MovieSimpleResponse, error) {
+func (r *MovieRepository) GetMoviesByFilter(ctx context.Context, title string, genres []string, limit, offset int) ([]models.MovieSimpleResponse, error) {
 	var redisKey string
 	useCache := offset == 0 // hanya cache page 1
 
 	if useCache {
-		redisKey = fmt.Sprintf("movies:filter:title=%s:genre=%s:limit=%d", title, genre, limit)
+		redisKey = fmt.Sprintf("movies:filter:title=%s:genre=%s:limit=%d", title, strings.Join(genres, ","), limit)
 		if val, err := r.rdb.Get(ctx, redisKey).Result(); err == nil {
 			var cached []models.MovieSimpleResponse
 			if jsonErr := json.Unmarshal([]byte(val), &cached); jsonErr == nil {
@@ -186,24 +162,27 @@ func (r *MovieRepository) GetMoviesByFilter(ctx context.Context, title, genre st
 
 	const q = `
 		SELECT m.id, m.title, m.poster,
-		       string_agg(g.name, ',') AS genres
-		FROM movies m
-		LEFT JOIN movie_genre mg ON mg.movie_id = m.id
-		LEFT JOIN genres g ON g.id = mg.genre_id
-		WHERE m.deleted_at IS NULL
-		  AND ($1 = '' OR m.title ILIKE '%' || $1 || '%')
-		  AND ($2 = '' OR m.id IN (
-		      SELECT mg2.movie_id
-		      FROM movie_genre mg2
-		      JOIN genres g2 ON g2.id = mg2.genre_id
-		      WHERE g2.name ILIKE '%' || $2 || '%'
-		  ))
-		GROUP BY m.id, m.title, m.poster
-		ORDER BY m.created_at DESC, m.id
-		LIMIT $3 OFFSET $4;
+       array_agg(g.name) AS genres
+FROM movies m
+LEFT JOIN movie_genre mg ON mg.movie_id = m.id
+LEFT JOIN genres g ON g.id = mg.genre_id
+WHERE m.deleted_at IS NULL
+  AND ($1 = '' OR m.title ILIKE '%' || $1 || '%')
+  AND (coalesce(array_length($2::text[],1),0) = 0
+       OR m.id IN (
+           SELECT mg2.movie_id
+           FROM movie_genre mg2
+           JOIN genres g2 ON g2.id = mg2.genre_id
+           WHERE g2.name = ANY($2::text[])
+		   GROUP BY mg2.movie_id
+    HAVING COUNT(DISTINCT g2.name) = array_length($2::text[],1)
+       ))
+GROUP BY m.id, m.title, m.poster
+ORDER BY m.created_at DESC, m.id
+LIMIT $3 OFFSET $4;
 	`
 
-	rows, err := r.db.Query(ctx, q, title, genre, limit, offset)
+	rows, err := r.db.Query(ctx, q, title, pq.Array(genres), limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -212,14 +191,12 @@ func (r *MovieRepository) GetMoviesByFilter(ctx context.Context, title, genre st
 	var movies []models.MovieSimpleResponse
 	for rows.Next() {
 		var m models.MovieSimpleResponse
-		var genres sql.NullString
+		var movieGenres []string
 
-		if err := rows.Scan(&m.ID, &m.Title, &m.Poster, &genres); err != nil {
+		if err := rows.Scan(&m.ID, &m.Title, &m.Poster, &movieGenres); err != nil {
 			return nil, err
 		}
-		if genres.Valid {
-			m.Genres = genres.String
-		}
+		m.Genres = movieGenres
 		movies = append(movies, m)
 	}
 
@@ -236,7 +213,7 @@ func (r *MovieRepository) GetMovieDetailByID(ctx context.Context, id int) (*mode
    SELECT m.id, m.title, m.poster, m.background_poster, 
 		       m.releaseDate, m.duration,  
 		       m.synopsis, d.name AS director,
-		       COALESCE(string_agg(DISTINCT g.name, ', '), '') AS genres,
+		       COALESCE(array_agg(DISTINCT g.name), '') AS genres,
 		       COALESCE(string_agg(DISTINCT c.name, ', '), '') AS casts
 		FROM movies m
 		LEFT JOIN director d ON d.id = m.director_id

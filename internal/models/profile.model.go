@@ -11,6 +11,7 @@ type Profile struct {
 	FirstName      string    `db:"firstname" json:"first_name"`
 	LastName       string    `db:"lastname" json:"last_name"`
 	Phone          string    `db:"phone" json:"phone"`
+	Email          string    `db:"email" json:"email"`
 	ProfilePicture string    `db:"profile_picture" json:"profile_picture"`
 	CreatedAt      time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
@@ -21,6 +22,7 @@ type ProfileBody struct {
 	FirstName          *string               `form:"first_name"`
 	LastName           *string               `form:"last_name"`
 	Phone              *string               `form:"phone"`
+	Email              *string               `form:"email"`
 	ProfilePictureFile *multipart.FileHeader `form:"profile_picture"`
 }
 

@@ -46,5 +46,7 @@ func main() {
 
 	r := routers.InitRouter(db, rdb)
 
+	r.Static("/profile_pictures", "./public/profile_pictures")
+
 	r.Run(":8080")
 }

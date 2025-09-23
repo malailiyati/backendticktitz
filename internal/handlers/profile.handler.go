@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -39,57 +38,41 @@ func NewProfileHandler(repo *repositories.ProfileRepository) *ProfileHandler {
 func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 	userIDVal, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"error":   "User ID tidak ditemukan di token",
-		})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": "User ID tidak ditemukan di token"})
 		return
 	}
-
-	userID, ok := userIDVal.(int)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"error":   "User ID tidak valid",
-		})
-		return
-	}
-
-	var req models.ProfileBody
-	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
-		return
-	}
+	userID := userIDVal.(int)
 
 	updates := make(map[string]interface{})
 
-	if req.FirstName != nil {
-		updates["firstname"] = *req.FirstName
+	// text fields
+	if first := c.PostForm("firstName"); first != "" {
+		updates["firstname"] = first
 	}
-	if req.LastName != nil {
-		updates["lastname"] = *req.LastName
+	if last := c.PostForm("lastName"); last != "" {
+		updates["lastname"] = last
 	}
-	if req.Phone != nil {
-		updates["phone"] = *req.Phone
+	if phone := c.PostForm("phone"); phone != "" {
+		updates["phone"] = phone
+	}
+	if email := c.PostForm("email"); email != "" {
+		updates["email"] = email
 	}
 
-	// handle file upload
-	if req.ProfilePictureFile != nil {
-		ext := strings.ToLower(filepath.Ext(req.ProfilePictureFile.Filename))
+	// file
+	file, err := c.FormFile("profilePictureFile")
+	if err == nil {
+		ext := strings.ToLower(filepath.Ext(file.Filename))
 		allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".jfif": true}
 		if !allowed[ext] {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid file type"})
-			return
-		}
-		if req.ProfilePictureFile.Size > 2<<20 { // 2 MB
-			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "file too large"})
 			return
 		}
 
 		newName := fmt.Sprintf("%d_%d%s", userID, time.Now().UnixNano(), ext)
 		savePath := filepath.Join("public/profile_pictures", newName)
 
-		if err := c.SaveUploadedFile(req.ProfilePictureFile, savePath); err != nil {
+		if err := c.SaveUploadedFile(file, savePath); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "failed to save file"})
 			return
 		}
@@ -98,15 +81,11 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 
 	updated, err := h.repo.UpdateProfile(c.Request.Context(), userID, updates)
 	if err != nil {
-		if req.ProfilePictureFile != nil {
-			_ = os.Remove("public" + updates["profile_picture"].(string)) // rollback file
-		}
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": updated})
-
 }
 
 // GetProfile godoc

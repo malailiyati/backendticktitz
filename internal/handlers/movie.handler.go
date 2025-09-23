@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/malailiyati/backend/internal/models"
 	"github.com/malailiyati/backend/internal/repositories"
 )
 
@@ -25,13 +28,21 @@ func NewMovieHandler(repo *repositories.MovieRepository) *MovieHandler {
 // @Success      200 {array} models.MovieResponse
 // @Router       /movie/upcoming [get]
 func (h *MovieHandler) GetUpcomingMovies(c *gin.Context) {
-	movies, err := h.repo.GetUpcomingMovies(c.Request.Context())
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if limit < 1 {
+		limit = 10
+	}
+	movies, err := h.repo.GetUpcomingMovies(c.Request.Context(), limit)
 	if err != nil {
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   err.Error(),
 		})
 		return
+	}
+	if movies == nil {
+		movies = []models.MovieSimpleResponse{}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -74,7 +85,7 @@ func (h *MovieHandler) GetPopularMovies(c *gin.Context) {
 // @Router /movie/ [get]
 func (h *MovieHandler) GetMoviesByFilter(c *gin.Context) {
 	title := c.Query("title")
-	genre := c.Query("genre")
+	genreParam := c.Query("genre")
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "12"))
@@ -86,7 +97,15 @@ func (h *MovieHandler) GetMoviesByFilter(c *gin.Context) {
 	}
 	offset := (page - 1) * limit
 
-	movies, err := h.repo.GetMoviesByFilter(c.Request.Context(), title, genre, limit, offset)
+	var genres []string
+	if genreParam != "" {
+		genres = strings.Split(genreParam, ",")
+		for i := range genres {
+			genres[i] = strings.TrimSpace(genres[i])
+		}
+	}
+
+	movies, err := h.repo.GetMoviesByFilter(c.Request.Context(), title, genres, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": err.Error()})
 		return

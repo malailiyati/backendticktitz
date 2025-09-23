@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/lib/pq"
 )
 
 type Movie struct {
@@ -13,7 +14,7 @@ type Movie struct {
 	Poster           string          `json:"poster"`
 	BackgroundPoster string          `json:"background_poster"`
 	ReleaseDate      time.Time       `json:"release_date"`
-	Duration         pgtype.Interval `json:"-"` // <- ini masalahnya
+	Duration         pgtype.Interval `json:"-"`
 	DurationText     string          `json:"duration"`
 	Synopsis         string          `json:"synopsis"`
 	Popularity       int             `json:"popularity"`
@@ -61,8 +62,8 @@ type MovieResponse struct {
 }
 
 type MovieSimpleResponse struct {
-	ID     int    `json:"id"`
-	Title  string `json:"title"`
-	Poster string `json:"poster"`
-	Genres string `json:"genres"`
+	ID     int            `json:"id"`
+	Title  string         `json:"title"`
+	Poster string         `json:"poster"`
+	Genres pq.StringArray `json:"genres" gorm:"type:text[]"`
 }
