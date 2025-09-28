@@ -136,7 +136,8 @@ func (r *MovieRepository) GetPopularMovies(ctx context.Context, limit int) ([]mo
 	if err != nil {
 		log.Println("Internal Server Error.\nCause: ", err.Error())
 	} else {
-		if err := r.rdb.Set(ctx, redisKey, string(bt), 5*time.Minute).Err(); err != nil {
+		// CHANGE: TTL untuk popular jadi 7 hari
+		if err := r.rdb.Set(ctx, redisKey, string(bt), 7*24*time.Hour).Err(); err != nil { // ADD
 			log.Println("Redis Error.\nCause: ", err.Error())
 		}
 	}
@@ -213,7 +214,7 @@ func (r *MovieRepository) GetMovieDetailByID(ctx context.Context, id int) (*mode
    SELECT m.id, m.title, m.poster, m.background_poster, 
 		       m.releaseDate, m.duration,  
 		       m.synopsis, d.name AS director,
-		       COALESCE(array_agg(DISTINCT g.name), '') AS genres,
+		       COALESCE(array_agg(DISTINCT g.name), '{}') AS genres,
 		       COALESCE(string_agg(DISTINCT c.name, ', '), '') AS casts
 		FROM movies m
 		LEFT JOIN director d ON d.id = m.director_id
@@ -231,6 +232,10 @@ func (r *MovieRepository) GetMovieDetailByID(ctx context.Context, id int) (*mode
 	var md models.MovieDetail
 	var iv pgtype.Interval
 
+	// variabel sementara
+	var genres []string
+	var casts string
+
 	err := row.Scan(
 		&md.ID,
 		&md.Title,
@@ -240,8 +245,8 @@ func (r *MovieRepository) GetMovieDetailByID(ctx context.Context, id int) (*mode
 		&iv,
 		&md.Synopsis,
 		&md.Director,
-		&md.Genres,
-		&md.Casts,
+		&genres,
+		&casts,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -251,6 +256,8 @@ func (r *MovieRepository) GetMovieDetailByID(ctx context.Context, id int) (*mode
 	}
 
 	md.Duration = utils.FormatIntervalToText(iv)
+	md.Genres = genres
+	md.Casts = casts
 
 	return &md, nil
 }

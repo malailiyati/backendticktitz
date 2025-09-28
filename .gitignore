@@ -7,3 +7,5 @@
 tmp/
 
 public/
+
+docker-compose.yml

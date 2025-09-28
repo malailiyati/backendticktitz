@@ -11,7 +11,7 @@ import (
 )
 
 func InitMovieAdminRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
-	movieAdminRepo := repositories.NewMovieAdminRepository(db)
+	movieAdminRepo := repositories.NewMovieAdminRepository(db, rdb)
 	movieAdminHandler := handlers.NewMovieAdminHandler(movieAdminRepo)
 
 	// Admin routes

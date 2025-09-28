@@ -10,14 +10,30 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/malailiyati/backend/internal/models"
 	"github.com/malailiyati/backend/internal/utils"
+	"github.com/redis/go-redis/v9"
 )
 
 type MovieAdminRepository struct {
-	db *pgxpool.Pool
+	db  *pgxpool.Pool
+	rdb *redis.Client
 }
 
-func NewMovieAdminRepository(db *pgxpool.Pool) *MovieAdminRepository {
-	return &MovieAdminRepository{db: db}
+func NewMovieAdminRepository(db *pgxpool.Pool, rdb *redis.Client) *MovieAdminRepository {
+	return &MovieAdminRepository{db: db, rdb: rdb}
+}
+
+// ADD: helper invalidasi cache
+func (r *MovieAdminRepository) InvalidateMovieCache(ctx context.Context) { // FIXED
+	// hapus upcoming
+	r.rdb.Del(ctx, "lala:movie-upcoming")
+
+	// hapus semua filter page=1
+	keys, _ := r.rdb.Keys(ctx, "movies:filter:*:page:1").Result()
+	for _, key := range keys {
+		r.rdb.Del(ctx, key)
+	}
+
+	// Popular tidak dihapus manual → biarkan expired otomatis setelah 7 hari
 }
 
 func (r *MovieAdminRepository) GetAllMovies(ctx context.Context) ([]models.MovieAdmin, error) {
@@ -79,6 +95,9 @@ func (r *MovieAdminRepository) DeleteMovie(ctx context.Context, id int) error {
 	if tag.RowsAffected() == 0 {
 		return errors.New("movie not found or already deleted")
 	}
+
+	// ADD: invalidasi cache
+	r.InvalidateMovieCache(ctx)
 
 	return nil
 }
@@ -200,6 +219,8 @@ func (r *MovieAdminRepository) UpdateMovie(ctx context.Context, id int, updates 
 		return models.MovieAdmin{}, fmt.Errorf("commit failed: %w", err)
 	}
 
+	r.InvalidateMovieCache(ctx)
+
 	return m, nil
 }
 
@@ -303,6 +324,7 @@ func (r *MovieAdminRepository) CreateMovie(ctx context.Context, movie models.Mov
 	if err = tx.Commit(ctx); err != nil {
 		return m, err
 	}
+	r.InvalidateMovieCache(ctx)
 
 	return m, nil
 }

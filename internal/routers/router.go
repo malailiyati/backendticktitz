@@ -17,7 +17,7 @@ import (
 func InitRouter(db *pgxpool.Pool, rdb *redis.Client) *gin.Engine {
 	router := gin.Default()
 	router.Use(middlewares.MyLogger)
-	router.Use(middlewares.CORSMiddleware)
+	router.Use(middlewares.CORSMiddleware())
 
 	docs.SwaggerInfo.BasePath = "/"
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
