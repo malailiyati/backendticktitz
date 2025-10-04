@@ -294,7 +294,14 @@ func (h *MovieAdminHandler) CreateMovie(c *gin.Context) {
 	// --- Parse duration (format HH:MM:SS) ---
 	var duration pgtype.Interval
 	if form.Duration != "" {
-		if d, err := time.ParseDuration(form.Duration); err == nil {
+		parts := strings.Split(form.Duration, ":")
+		if len(parts) == 3 {
+			hh, _ := strconv.Atoi(parts[0])
+			mm, _ := strconv.Atoi(parts[1])
+			ss, _ := strconv.Atoi(parts[2])
+			d := (time.Duration(hh) * time.Hour) +
+				(time.Duration(mm) * time.Minute) +
+				(time.Duration(ss) * time.Second)
 			duration = pgtype.Interval{Microseconds: d.Microseconds(), Valid: true}
 		}
 	}
