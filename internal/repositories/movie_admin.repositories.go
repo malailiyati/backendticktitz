@@ -38,13 +38,28 @@ func (r *MovieAdminRepository) InvalidateMovieCache(ctx context.Context) { // FI
 
 func (r *MovieAdminRepository) GetAllMovies(ctx context.Context) ([]models.MovieAdmin, error) {
 	sql := `
-		SELECT id, title, director_id, poster, background_poster,
-			   releasedate, duration, synopsis, popularity,
-			   created_at, updated_at
-		FROM movies
-		WHERE deleted_at IS NULL
-		ORDER BY created_at DESC
-	`
+    SELECT 
+        m.id,
+        m.title,
+        m.director_id,
+        m.poster,
+        m.background_poster,
+        m.releasedate,
+        m.duration,
+        m.synopsis,
+        m.popularity,
+        m.created_at,
+        m.updated_at,
+        COALESCE(ARRAY_AGG(DISTINCT mg.genre_id) FILTER (WHERE mg.genre_id IS NOT NULL), '{}') AS genres,
+        COALESCE(ARRAY_AGG(DISTINCT mc.cast_id) FILTER (WHERE mc.cast_id IS NOT NULL), '{}') AS casts
+    FROM movies m
+    LEFT JOIN movie_genre mg ON m.id = mg.movie_id
+    LEFT JOIN movie_cast mc ON m.id = mc.movie_id
+    WHERE m.deleted_at IS NULL
+    GROUP BY m.id
+    ORDER BY m.created_at DESC
+`
+
 	rows, err := r.db.Query(ctx, sql)
 	if err != nil {
 		return nil, err
@@ -55,6 +70,9 @@ func (r *MovieAdminRepository) GetAllMovies(ctx context.Context) ([]models.Movie
 	for rows.Next() {
 		var m models.MovieAdmin
 		var iv pgtype.Interval
+
+		var genreIDs []int32
+		var castIDs []int32
 
 		if err := rows.Scan(
 			&m.ID,
@@ -68,8 +86,21 @@ func (r *MovieAdminRepository) GetAllMovies(ctx context.Context) ([]models.Movie
 			&m.Popularity,
 			&m.CreatedAt,
 			&m.UpdatedAt,
+			&genreIDs,
+			&castIDs,
 		); err != nil {
 			return nil, err
+		}
+
+		m.Duration = iv
+		m.DurationText = utils.FormatIntervalToText(iv)
+		m.Genres = make([]int, len(genreIDs))
+		for i, gid := range genreIDs {
+			m.Genres[i] = int(gid)
+		}
+		m.Casts = make([]int, len(castIDs))
+		for i, cid := range castIDs {
+			m.Casts[i] = int(cid)
 		}
 
 		// simpan interval mentah + string hasil convert
